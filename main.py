@@ -11,8 +11,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def eeg_retriever():
-    muse = list_muses()[0]
-    stream_process = Process(target=stream, args=(muse,))
+    muses = list_muses()
+    stream_process = Process(target=stream, args=(muses[0]['address'],))
     stream_process.start()
     view()
 
