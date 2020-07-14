@@ -12,4 +12,6 @@ resources:
 
 
 ### N-back data collector:
-Install and run BlueMuse, and then run `main.py`. 
+On Windows: Install BlueMuse, start streaming and then run `main.py`. 
+
+On Mac: Connect to a BLED112 dongle, install uvicMuse, start streaming, and then run `main.py`.
