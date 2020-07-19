@@ -22,7 +22,7 @@ class EEGDataset(tud.Dataset):
             labels = []
             print('Generating dataset...')
             for f in tqdm(files):
-                label = int(f.split('_')[1][1:])-1
+                label = int(f.split('_')[2][1:])-1 # TODO: stop using '_' for userid!
                 signal = []
                 with open(os.path.join(path, f), 'r') as infile:
                     lines = infile.readlines()
@@ -55,7 +55,6 @@ class EEGDataset(tud.Dataset):
             hf = h5py.File(os.path.join(path, self.hf_name), 'w')
             hf.create_dataset(self.mode, data=data)
             hf.create_dataset(self.mode + '_labels', data=labels)
-            hf.create_dataset(self.mode + '_len', data=data.shape[0])
             hf.close()
 
         self.gt = h5py.File(os.path.join(path, self.hf_name), 'r')
@@ -67,6 +66,6 @@ class EEGDataset(tud.Dataset):
     def __getitem__(self, index):
         return self.gt[self.mode][index], self.gt[self.mode+'_labels'][index]
 
-# d = EEGDataset('data/dataset_7_12_4', 'EEG', 256, 2, 0.5, 'train')
+# d = EEGDataset('data/ru0718train', 'EEG', 256, 5, 0.1, 'train')
 # print(len(d))
 

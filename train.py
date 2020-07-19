@@ -1,31 +1,37 @@
 import torch
 import numpy as np
-from progress.bar import Bar
-
+from tqdm import tqdm
+import logging
 
 def step(split, epoch, dataLoader, model, criterion, optimizer):
     model = model.float()
+    nIter = len(dataLoader)
     if split == 'train':
         model.train()
     else:
         model.eval()
-    nIter = len(dataLoader)
-    bar = Bar("exp", max=nIter)
-    for i, (data, labels) in enumerate(dataLoader):
+        # print('val len: ', nIter)
+    num_true = 0
+    total = 0
+    acc = 0
+    run_loss = 0
+    for (data, labels) in tqdm(dataLoader):
         # data = data.double()
         output = model(data.float())
         loss = criterion(output, labels.long())
-        acc = 0
+        run_loss += loss.item()
         if split == 'train':
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         else:
             _, pred = torch.max(output, 1)
-            acc = np.sum(pred.numpy() == labels.numpy())/labels.shape[0]
-        Bar.suffix = '{} Epoch: [{}][{}/{}]| Total: {} | ETA: {} | Loss {} | Acc {}'\
-            .format(split, epoch, i, nIter, bar.elapsed_td, bar.eta_td, loss, acc)
-        return loss, acc
+            num_true += np.sum(pred.numpy() == labels.numpy())
+            total += labels.shape[0]
+    run_loss /= nIter
+    if split == 'val':
+        acc = num_true/total
+    return loss, acc
 
 def train(epoch, dataLoader, model, criterion, optimizer):
     return step('train', epoch, dataLoader, model, criterion, optimizer)

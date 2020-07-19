@@ -15,3 +15,5 @@ resources:
 On Windows: Install BlueMuse, start streaming and then run `main.py`. 
 
 On Mac: Connect to a BLED112 dongle, install uvicMuse, start streaming, and then run `main.py`.
+
+### Model training
