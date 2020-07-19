@@ -3,6 +3,7 @@ import torch.utils.data as tud
 from model import EEG_CNN
 from dataset import EEGDataset
 from train import train, val
+from resnet import ResNet, BasicBlock, Bottleneck
 import logging
 import os
 
@@ -13,10 +14,13 @@ stride = 0.1
 outclass = 5
 lr = 0.002
 numEpoch = 200
-batchsize = 64
+batchsize = 2
 val_interval = 2
 type_ = 'EEG'
-exp = '0718'
+cnn = 'resnet' # vs. 'normal'
+exp = '0718_x'
+use_gpu = False
+gpuid = 0
 
 if not os.path.exists(os.path.join('exps', exp)):
     os.mkdir(os.path.join('exps', exp))
@@ -34,11 +38,23 @@ def saveModel(epoch, model, optimizer, save_path):
 
 
 def main():
-    logging.info('exp name: {}\ndata: {}\ntype: {}\nwinsize={}\nstride={}\nlr={}\nbatchsize={}'\
-        .format(exp, dataset_path, type_, winsize, stride, lr, batchsize))
+    logging.info('\nexp name: {}\ndata: {}\ntype: {}\nwinsize={}\nstride={}\nmodel: {}\nlr={}\nbatchsize={}\ngpu={}, {}'\
+        .format(exp, dataset_path, type_, winsize, stride, cnn, lr, batchsize, use_gpu, gpuid))
     logging.info('Training start!')
 
-    model = EEG_CNN(winsize*freq, outclass)
+    if cnn == 'resnet':
+        model = ResNet(BasicBlock, [2,2,2,2], num_classes=outclass)
+    else:
+        model = EEG_CNN(winsize*freq, outclass)
+
+    if use_gpu:
+        device = 'cuda:{}'.format(gpuid)
+        model = model.to(device)
+        model = torch.nn.DataParallel(model)
+    else:
+        device = 'cpu'
+        model = model.float()
+
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr=lr)
 
@@ -52,12 +68,12 @@ def main():
     for epoch in range(numEpoch):
         logging.info('Epoch {} start...'.format(epoch+1))
         print('Epoch {} start...'.format(epoch+1))
-        loss, _ = train(epoch, train_loader, model, criterion, optimizer)
+        loss, _ = train(epoch, train_loader, model, criterion, optimizer, device)
         logging.info('train loss: {}'.format(loss))
         print('train loss: {}'.format(loss))
 
         if (epoch+1) % val_interval == 0:
-            loss, acc = val(epoch, val_loader, model, criterion, optimizer)
+            loss, acc = val(epoch, val_loader, model, criterion, optimizer, device)
             print('validation acc: {}, loss: {}'.format(acc, loss))
             logging.info('validation acc: {}, loss: {}'.format(acc, loss))
             saveModel(epoch+1, model, optimizer, os.path.join('exps', exp, 'model_epoch{}.pth'.format(epoch+1)))
