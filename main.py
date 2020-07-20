@@ -69,14 +69,6 @@ def main(isTest):
 
     initEpoch = 0
 
-    if opt.modelPath:
-        logging.info('Loading model parameters from {}...'.format(opt.modelPath))
-        print('Loading model parameters from {}...'.format(opt.modelPath))
-        checkpoint = torch.load(opt.modelPath)
-        model.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        initEpoch = checkpoint['epoch']
-
     if opt.useGPU:
         device = 'cuda:{}'.format(opt.gpuid)
         model = model.to(device, dtype=torch.float)
@@ -84,6 +76,14 @@ def main(isTest):
     else:
         device = 'cpu'
         model = model.float()
+
+    if opt.modelPath:
+        logging.info('Loading model parameters from {}...'.format(opt.modelPath))
+        print('Loading model parameters from {}...'.format(opt.modelPath))
+        checkpoint = torch.load(opt.modelPath)
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        initEpoch = checkpoint['epoch']
 
     if not opt.isTest:
         dataset = EEGDataset(opt.datasetPath, opt.signalType, opt.freq, opt.winsize, opt.stride, 'train')
