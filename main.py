@@ -30,15 +30,15 @@ parser.add_argument('-valInterval', type=int, default=5, help='interval for vali
 parser.add_argument('-signalType', default='EEG', help='specify the type of your signal data')
 parser.add_argument('-cnn', default='resnet', help='specify the model you use for training/testing') # vs. 'normal'
 
-args = parser.parse_args()
+opt = parser.parse_args()
 
 if not os.path.exists('exps'):
     os.mkdir('exps')
 
-if not os.path.exists(os.path.join('exps', args.exp)):
-    os.mkdir(os.path.join('exps', args.exp))
+if not os.path.exists(os.path.join('exps', opt.exp)):
+    os.mkdir(os.path.join('exps', opt.exp))
 
-logging.basicConfig(filename=os.path.join('exps', args.exp, 'train.log'), level=logging.INFO)
+logging.basicConfig(filename=os.path.join('exps', opt.exp, 'train.log'), level=logging.INFO)
 
 
 def saveModel(epoch, model, optimizer, save_path):
@@ -50,22 +50,22 @@ def saveModel(epoch, model, optimizer, save_path):
     torch.save(checkpoint, save_path)
 
 
-def main(args.isTest):
+def main(isTest):
     logging.info('\nexp name: {}\ndata: {}\ntype: {}\nwinsize={}\nstride={}\nmodel: {}\nlr={}\nbatchsize={}\ngpu={}, {}'\
-        .format(args.exp, args.datasetPath, args.signalType, args.winsize, 
-        args.stride, args.cnn, args.lr, args.batchsize, args.useGPU, args.gpuid))
-    if not args.isTest:
+        .format(opt.exp, opt.datasetPath, opt.signalType, opt.winsize, 
+        opt.stride, opt.cnn, opt.lr, opt.batchsize, opt.useGPU, opt.gpuid))
+    if not opt.isTest:
         logging.info('Training start!')
     else:
         logging.info('Testing start!')
 
-    if args.cnn == 'resnet':
-        model = ResNet(BasicBlock, [2,2,2,2], num_classes=args.outclass)
+    if opt.cnn == 'resnet':
+        model = ResNet(BasicBlock, [2,2,2,2], num_classes=opt.outclass)
     else:
-        model = EEG_CNN(args.winsize*args.freq, args.outclass)
+        model = EEG_CNN(opt.winsize*opt.freq, opt.outclass)
 
-    if args.useGPU:
-        device = 'cuda:{}'.format(args.gpuid)
+    if opt.useGPU:
+        device = 'cuda:{}'.format(opt.gpuid)
         model = model.to(device, dtype=torch.float)
         model = torch.nn.DataParallel(model)
     else:
@@ -73,36 +73,36 @@ def main(args.isTest):
         model = model.float()
 
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr)
 
-    if not args.isTest:
-        dataset = EEGDataset(args.datasetPath, args.signalType, args.freq, args.winsize, args.stride, 'train')
+    if not opt.isTest:
+        dataset = EEGDataset(opt.datasetPath, opt.signalType, opt.freq, opt.winsize, opt.stride, 'train')
         train_len = int(len(dataset)*0.7)
         trainset, valset = tud.random_split(dataset, [train_len, len(dataset) - train_len])
 
-        train_loader = tud.DataLoader(trainset, batch_size=args.batchsize)
-        val_loader = tud.DataLoader(valset, batch_size=args.batchsize)
+        train_loader = tud.DataLoader(trainset, batch_size=opt.batchsize)
+        val_loader = tud.DataLoader(valset, batch_size=opt.batchsize)
 
-        for epoch in range(args.numEpoch):
+        for epoch in range(opt.numEpoch):
             logging.info('Epoch {} start...'.format(epoch+1))
             print('Epoch {} start...'.format(epoch+1))
             loss, _ = train(epoch, train_loader, model, criterion, optimizer, device)
             logging.info('train loss: {}'.format(loss))
             print('train loss: {}'.format(loss))
 
-            if (epoch+1) % args.valInterval == 0:
+            if (epoch+1) % opt.valInterval == 0:
                 loss, acc = val(epoch, val_loader, model, criterion, optimizer, device)
                 print('validation acc: {}, loss: {}'.format(acc, loss))
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
-                saveModel(epoch+1, model, optimizer, os.path.join('exps', args.exp, 'model_epoch{}.pth'.format(epoch+1)))
+                saveModel(epoch+1, model, optimizer, os.path.join('exps', opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
                 logging.info('model saved.')
     else:
-        dataset = EEGDataset(args.datasetPath, args.signalType, args.freq, args.winsize, args.stride, 'test')
-        test_loader = tud.DataLoader(dataset, batch_size=args.batchsize)
-        checkpoint = torch.load(args.modelPath)
+        dataset = EEGDataset(opt.datasetPath, opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
+        test_loader = tud.DataLoader(dataset, batch_size=opt.batchsize)
+        checkpoint = torch.load(opt.modelPath)
         model.load_state_dict(checkpoint['state_dict'])
-        logging.info('Model {} loaded!'.format(args.modelPath))
-        print('Model {} loaded!'.format(args.modelPath))
+        logging.info('Model {} loaded!'.format(opt.modelPath))
+        print('Model {} loaded!'.format(opt.modelPath))
         logging.info('Testing start...')
         print('Testing start...')
         loss, acc = val(0, test_loader, model, criterion, optimizer, device)
@@ -110,4 +110,4 @@ def main(args.isTest):
         logging.info('test acc: {}, loss: {}'.format(acc, loss))
 
 
-main(args.isTest)
+main(opt.isTest)
