@@ -12,15 +12,20 @@ winsize = 5
 freq = 256
 stride = 0.1
 outclass = 5
+
 lr = 0.002
-numEpoch = 200
-batchsize = 2
-val_interval = 2
+numEpoch = 100
+batchsize = 32
+val_interval = 5
 type_ = 'EEG'
 cnn = 'resnet' # vs. 'normal'
-exp = '0718_x'
-use_gpu = False
+exp = '0719_9'
+
+use_gpu = True
 gpuid = 0
+
+if not os.path.exists('exps'):
+    os.mkdir('exps')
 
 if not os.path.exists(os.path.join('exps', exp)):
     os.mkdir(os.path.join('exps', exp))
@@ -49,7 +54,7 @@ def main():
 
     if use_gpu:
         device = 'cuda:{}'.format(gpuid)
-        model = model.to(device)
+        model = model.to(device, dtype=torch.float)
         model = torch.nn.DataParallel(model)
     else:
         device = 'cpu'

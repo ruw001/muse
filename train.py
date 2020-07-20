@@ -19,7 +19,7 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device):
         if device == 'cpu':
             data, labels = data.float(), labels.long()
         else:
-            data, labels = data.to(device), labels.to(device)
+            data, labels = data.to(device, dtype=torch.float), labels.to(device, dtype=torch.long)
         optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, labels)
