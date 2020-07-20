@@ -24,7 +24,7 @@ parser.add_argument('-stride', type=float, default=0.1, help='stride for generat
 parser.add_argument('-outclass', type=int, default=5, help='number of output classes')
 
 parser.add_argument('-lr', type=float, default=0.002, help='learnign rate')
-parser.add_argument('-numEpoch', type=int, default=100, help='# epochs')
+parser.add_argument('-numEpoch', type=int, default=200, help='# epochs')
 parser.add_argument('-batchsize', type=int, default=32, help='batch size')
 parser.add_argument('-valInterval', type=int, default=5, help='interval for validation')
 parser.add_argument('-signalType', default='EEG', help='specify the type of your signal data')
@@ -63,6 +63,19 @@ def main(isTest):
         model = ResNet(BasicBlock, [2,2,2,2], num_classes=opt.outclass)
     else:
         model = EEG_CNN(opt.winsize*opt.freq, opt.outclass)
+    
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr)
+
+    initEpoch = 0
+
+    if opt.modelPath:
+        logging.info('Loading model parameters from {}...'.format(opt.modelPath))
+        print('Loading model parameters from {}...'.format(opt.modelPath))
+        checkpoint = torch.load(opt.modelPath)
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        initEpoch = checkpoint['epoch']
 
     if opt.useGPU:
         device = 'cuda:{}'.format(opt.gpuid)
@@ -72,9 +85,6 @@ def main(isTest):
         device = 'cpu'
         model = model.float()
 
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr)
-
     if not opt.isTest:
         dataset = EEGDataset(opt.datasetPath, opt.signalType, opt.freq, opt.winsize, opt.stride, 'train')
         train_len = int(len(dataset)*0.7)
@@ -83,7 +93,7 @@ def main(isTest):
         train_loader = tud.DataLoader(trainset, batch_size=opt.batchsize)
         val_loader = tud.DataLoader(valset, batch_size=opt.batchsize)
 
-        for epoch in range(opt.numEpoch):
+        for epoch in range(initEpoch, initEpoch + opt.numEpoch):
             logging.info('Epoch {} start...'.format(epoch+1))
             print('Epoch {} start...'.format(epoch+1))
             loss, _ = train(epoch, train_loader, model, criterion, optimizer, device)
@@ -99,10 +109,6 @@ def main(isTest):
     else:
         dataset = EEGDataset(opt.datasetPath, opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
         test_loader = tud.DataLoader(dataset, batch_size=opt.batchsize)
-        checkpoint = torch.load(opt.modelPath)
-        model.load_state_dict(checkpoint['state_dict'])
-        logging.info('Model {} loaded!'.format(opt.modelPath))
-        print('Model {} loaded!'.format(opt.modelPath))
         logging.info('Testing start...')
         print('Testing start...')
         loss, acc = val(0, test_loader, model, criterion, optimizer, device)
