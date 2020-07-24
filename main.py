@@ -86,12 +86,14 @@ def main(isTest):
         initEpoch = checkpoint['epoch']
 
     if not opt.isTest:
-        dataset = EEGDataset(opt.datasetPath, opt.signalType, opt.freq, opt.winsize, opt.stride, 'train')
+        dataset = EEGDataset(os.path.join(opt.datasetPath, 'train'), opt.signalType, opt.freq, opt.winsize, opt.stride, 'train')
         train_len = int(len(dataset)*0.7)
         trainset, valset = tud.random_split(dataset, [train_len, len(dataset) - train_len])
+        testset = EEGDataset(os.path.join(opt.datasetPath, 'test'), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
 
         train_loader = tud.DataLoader(trainset, batch_size=opt.batchsize)
         val_loader = tud.DataLoader(valset, batch_size=opt.batchsize)
+        test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
 
         for epoch in range(initEpoch, initEpoch + opt.numEpoch):
             logging.info('Epoch {} start...'.format(epoch+1))
@@ -104,10 +106,15 @@ def main(isTest):
                 loss, acc = val(epoch, val_loader, model, criterion, optimizer, device)
                 print('validation acc: {}, loss: {}'.format(acc, loss))
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
+                logging.info('Testing start...')
+                print('Testing start...')
+                loss, acc = val(epoch, test_loader, model, criterion, optimizer, device)
+                print('test acc: {}, loss: {}'.format(acc, loss))
+                logging.info('test acc: {}, loss: {}'.format(acc, loss))
                 saveModel(epoch+1, model, optimizer, os.path.join('exps', opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
                 logging.info('model saved.')
     else:
-        dataset = EEGDataset(opt.datasetPath, opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
+        dataset = EEGDataset(os.path.join(opt.datasetPath, 'test'), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
         test_loader = tud.DataLoader(dataset, batch_size=opt.batchsize)
         logging.info('Testing start...')
         print('Testing start...')
