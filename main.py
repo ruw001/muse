@@ -93,8 +93,11 @@ def main(isTest):
         testset = EEGDataset(os.path.join(opt.datasetPath, 'test'), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
 
         train_loader = tud.DataLoader(trainset, batch_size=opt.batchsize)
+        print('trainset size:', len(train_loader))
         val_loader = tud.DataLoader(valset, batch_size=opt.batchsize)
+        print('valset size:', len(val_loader))
         test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
+        print('testset size:', len(test_loader))
 
         for epoch in range(initEpoch, initEpoch + opt.numEpoch):
             logging.info('Epoch {} start...'.format(epoch+1))
