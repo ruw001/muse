@@ -72,7 +72,8 @@ def main(isTest):
     if opt.useGPU:
         device = 'cuda:{}'.format(opt.gpuid)
         model = model.to(device, dtype=torch.float)
-        model = torch.nn.DataParallel(model)
+        model = torch.nn.DataParallel(model, device_ids=[opt.gpuid])
+        criterion = criterion.to(device)
     else:
         device = 'cpu'
         model = model.float()
