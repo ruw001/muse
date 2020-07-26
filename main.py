@@ -170,21 +170,19 @@ def main(isTest):
                                 criterion, optimizer, device)
                 logging.info('train loss: {}'.format(loss))
                 print('train loss: {}'.format(loss))
-
-                if (epoch+1) % opt.valInterval == 0:
-                    loss, acc = val(epoch, val_loader, model,
-                                    criterion, optimizer, device)
-                    print('validation acc: {}, loss: {}'.format(acc, loss))
-                    logging.info('validation acc: {}, loss: {}'.format(acc, loss))
-                    logging.info('Testing start...')
-                    print('Testing start...')
-                    loss, acc = val(epoch, test_loader, model,
-                                    criterion, optimizer, device)
-                    print('test acc: {}, loss: {}'.format(acc, loss))
-                    logging.info('test acc: {}, loss: {}'.format(acc, loss))
-                    saveModel(epoch+1, model, optimizer, os.path.join('exps',
-                                                                    opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
-                    logging.info('model saved.')
+                loss, acc = val(epoch, val_loader, model,
+                                criterion, optimizer, device)
+                print('validation acc: {}, loss: {}'.format(acc, loss))
+                logging.info('validation acc: {}, loss: {}'.format(acc, loss))
+            logging.info('Testing start...')
+            print('Testing start...')
+            loss, acc = val(epoch, test_loader, model,
+                            criterion, optimizer, device)
+            print('test acc: {}, loss: {}'.format(acc, loss))
+            logging.info('test acc: {}, loss: {}'.format(acc, loss))
+            saveModel(epoch+1, model, optimizer, os.path.join('exps',
+                    opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
+            logging.info('model saved.')
 
     else:
         dataset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
