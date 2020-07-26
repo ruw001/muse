@@ -17,7 +17,7 @@ class EEGDataset(tud.Dataset):
         self.hf_name = "{}_{}_{}_{}.h5".format(mode, type_, winsize, stride)
         
         if not self.hf_name in os.listdir(path):
-            files = [f for f in os.listdir(path) if self.type in f and f[0] != '.']
+            files = [f for f in os.listdir(path) if self.type in f and f[0] != '.' and 'h5' not in f]
             data = []
             labels = []
             print('Generating dataset...')
@@ -66,6 +66,6 @@ class EEGDataset(tud.Dataset):
     def __getitem__(self, index):
         return self.gt[self.mode][index], self.gt[self.mode+'_labels'][index]
 
-# d = EEGDataset('data/ru0718train', 'EEG', 256, 5, 0.1, 'train')
+# d = EEGDataset('data/ru0718/test', 'EEG', 256, 30, 0.1, 'test')
 # print(len(d))
 
