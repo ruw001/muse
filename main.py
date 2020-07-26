@@ -154,12 +154,15 @@ def main(isTest):
                 testset = EEGDataset(os.path.join(
                     opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
         
-        cvloaders = [tud.DataLoader(d, batch_size=opt.batchsize) for d in cvsets]
+        # cvloaders = [tud.DataLoader(d, batch_size=opt.batchsize) for d in cvsets]
         test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
         for cluster in range(initEpoch, initEpoch + opt.numEpoch, len(cvsets)):
             for i in range(len(cvsets)):
-                train_loader = tud.ConcatDataset([cvloaders[l] for l in range(len(cvloaders)) if l != i])
-                val_loader = cvloaders[i]
+                train_dataset = tud.ConcatDataset(
+                    [cvsets[l] for l in range(len(cvsets)) if l != i])
+                train_loader = tud.DataLoader(train_dataset, batch_size=opt.batchsize)
+                val_loader = tud.DataLoader(
+                    cvsets[i], batch_size=opt.batchsize)
                 epoch = cluster + i
                 logging.info('Epoch {} start...'.format(epoch+1))
                 print('Epoch {} start...'.format(epoch+1))
