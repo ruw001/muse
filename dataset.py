@@ -90,6 +90,6 @@ class EEGDataset(tud.Dataset):
     def __getitem__(self, index):
         return self.gt[self.mode][index], self.gt[self.mode+'_labels'][index]
 
-d = EEGDataset('data/ru0718/train', 'EEG', 256, 15, 0.1, 'train', True)
-print(d[0][0].shape)
+# d = EEGDataset('data/ru0718/train', 'EEG', 256, 15, 0.1, 'train', True)
+# print(d[0][0].shape)
 
