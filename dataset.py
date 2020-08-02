@@ -7,7 +7,7 @@ import h5py
 from tqdm import tqdm
 
 class EEGDataset(tud.Dataset):
-    def __init__(self, path, type_, freq, winsize, stride, mode, extract):
+    def __init__(self, path, type_, freq, winsize, stride, mode, extract, outClass):
         self.path = path
         self.type = type_
         self.freq = freq
@@ -15,7 +15,10 @@ class EEGDataset(tud.Dataset):
         self.stride = stride
         self.mode = mode
         self.extract = extract
-        self.hf_name = "{}_{}_{}_{}_{}.h5".format(mode, type_, winsize, stride, 'E' if extract else 'U')
+        self.label_dict = {}
+        for i in range(len(outClass)):
+            self.label_dict[outClass[i]] = i
+        self.hf_name = "{}_{}_{}_{}_{}_{}.h5".format(mode, type_, winsize, stride, len(outClass), 'E' if extract else 'U')
         
         if not self.hf_name in os.listdir(path):
             files = [f for f in os.listdir(path) if self.type in f and f[0] != '.' and 'h5' not in f]
@@ -23,7 +26,11 @@ class EEGDataset(tud.Dataset):
             labels = []
             print('Generating dataset...')
             for f in tqdm(files):
-                label = int(f.split('_')[2][1:])-1 # TODO: stop using '_' for userid!
+                label = int(f.split('_')[2][1:])-1 # TODO: stop using '_' in userid!
+                if label not in outClass:
+                    continue
+                # new label
+                label = self.label_dict[label]
                 signal = []
                 with open(os.path.join(path, f), 'r') as infile:
                     lines = infile.readlines()

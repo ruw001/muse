@@ -15,9 +15,12 @@ parser.add_argument('-exp', default='', help='experiment ID')
 parser.add_argument('-useGPU', action='store_true', help='if use GPU or not')
 parser.add_argument('-gpuids', nargs='+', type=int,
                     default=[0], help='GPU IDs')
-# args that always change (for testing)
+parser.add_argument('-outclass', nargs='+', type=int,
+                    default=[0, 1, 2, 3, 4], help='output classes')
 parser.add_argument('-cv', action='store_true',
                     help='if this exp uses cross validation')
+
+# args that always change (for testing)
 parser.add_argument('-isTest', action='store_true',
                     help='if this is testing or not')
 # exps/0719_9/model_epoch100.pth
@@ -29,8 +32,7 @@ parser.add_argument('-freq', type=int, default=256,
                     help='frequency of signal (Hz)')
 parser.add_argument('-stride', type=float, default=0.1,
                     help='stride for generating dataset (s)')
-parser.add_argument('-outclass', type=int, default=5,
-                    help='number of output classes')
+
 parser.add_argument('-E', action='store_true', help='extract freq bands and use FFT')
 
 parser.add_argument('-lr', type=float, default=0.002, help='learnign rate')
@@ -65,8 +67,8 @@ def saveModel(epoch, model, optimizer, save_path):
 
 
 def main(isTest):
-    logging.info('\nexp name: {}\ndata: {}\ntype: {}\nwinsize={}\nstride={}\nmodel: {}\nlr={}\nbatchsize={}\ngpu={}, {}'
-                 .format(opt.exp, opt.datasetPath, opt.signalType, opt.winsize,
+    logging.info('\nexp name: {}\ndata: {}\ntype: {}\noutclass={}\nwinsize={}\nstride={}\nmodel: {}\nlr={}\nbatchsize={}\ngpu={}, {}'
+                 .format(opt.exp, opt.datasetPath, opt.signalType, opt.outclass, opt.winsize,
                          opt.stride, opt.cnn, opt.lr, opt.batchsize, opt.useGPU, opt.gpuids))
     if not opt.isTest:
         logging.info('Training start!')
@@ -74,9 +76,9 @@ def main(isTest):
         logging.info('Testing start!')
 
     if opt.cnn == 'resnet':
-        model = ResNet(8 if opt.E else 4, BasicBlock, [2, 2, 2, 2], num_classes=opt.outclass)
+        model = ResNet(8 if opt.E else 4, BasicBlock, [2, 2, 2, 2], num_classes=len(opt.outclass))
     else:
-        model = EEG_CNN(opt.winsize*opt.freq, opt.outclass)
+        model = EEG_CNN(opt.winsize*opt.freq, len(opt.outclass))
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr)
@@ -103,12 +105,12 @@ def main(isTest):
 
     if not opt.isTest and not opt.cv:
         dataset = EEGDataset(os.path.join(opt.datasetPath, 'train'),
-                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'train', opt.E)
+                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'train', opt.E, opt.outclass)
         train_len = int(len(dataset)*0.7)
         trainset, valset = tud.random_split(
             dataset, [train_len, len(dataset) - train_len])
         testset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
-                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E)
+                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
 
         train_loader = tud.DataLoader(trainset, batch_size=opt.batchsize)
         print('trainset size:', len(train_loader))
@@ -149,11 +151,11 @@ def main(isTest):
         for f in folders:
             if f != testIdx:
                 dataset = EEGDataset(os.path.join(
-                    opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'train', opt.E)
+                    opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'train', opt.E, opt.outclass)
                 cvsets.append(dataset)
             else:
                 testset = EEGDataset(os.path.join(
-                    opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E)
+                    opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
         
         val_acc = 0
         acc = 0
@@ -193,7 +195,7 @@ def main(isTest):
 
     else:
         dataset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
-                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E)
+                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
         test_loader = tud.DataLoader(dataset, batch_size=opt.batchsize)
         logging.info('Testing start...')
         print('Testing start...')
