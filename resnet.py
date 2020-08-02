@@ -80,10 +80,10 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, num_classes=5):
+    def __init__(self, in_channel, block, layers, num_classes=5):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv1d(4, 64, kernel_size=3, stride=1, padding=1, bias=True)
+        self.conv1 = nn.Conv1d(in_channel, 64, kernel_size=3, stride=1, padding=1, bias=True)
         self.bn1 = nn.BatchNorm1d(64)
         self.relu = nn.LeakyReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)

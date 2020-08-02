@@ -74,7 +74,7 @@ def main(isTest):
         logging.info('Testing start!')
 
     if opt.cnn == 'resnet':
-        model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=opt.outclass)
+        model = ResNet(8 if opt.E else 4, BasicBlock, [2, 2, 2, 2], num_classes=opt.outclass)
     else:
         model = EEG_CNN(opt.winsize*opt.freq, opt.outclass)
 
