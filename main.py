@@ -155,6 +155,8 @@ def main(isTest):
                 testset = EEGDataset(os.path.join(
                     opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E)
         
+        val_acc = 0
+        acc = 0
         # cvloaders = [tud.DataLoader(d, batch_size=opt.batchsize) for d in cvsets]
         test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
         for cluster in range(initEpoch, initEpoch + opt.numEpoch, len(cvsets)):
@@ -175,15 +177,19 @@ def main(isTest):
                                 criterion, optimizer, device)
                 print('validation acc: {}, loss: {}'.format(acc, loss))
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
+            
+            if acc > val_acc:
+                val_acc = acc
+                saveModel(epoch+1, model, optimizer, os.path.join('exps',
+                            opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
+                logging.info('model saved.')
+
             logging.info('Testing start...')
             print('Testing start...')
-            loss, acc = val(epoch, test_loader, model,
+            loss, t_acc = val(epoch, test_loader, model,
                             criterion, optimizer, device)
-            print('test acc: {}, loss: {}'.format(acc, loss))
-            logging.info('test acc: {}, loss: {}'.format(acc, loss))
-            saveModel(epoch+1, model, optimizer, os.path.join('exps',
-                    opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
-            logging.info('model saved.')
+            print('test acc: {}, loss: {}'.format(t_acc, loss))
+            logging.info('test acc: {}, loss: {}'.format(t_acc, loss))
 
     else:
         dataset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
