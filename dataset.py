@@ -52,8 +52,9 @@ class EEGDataset(tud.Dataset):
                 for i in range(data.shape[0]):
                     res = self.extract_band(data[i,:,:], self.freq) # c * len(bands)
                     new_data.append(res)
+                # print(new_data[0].shape)
                 data = np.array(new_data)
-            
+            # print(data.shape)
             # shuffle dataset
             indices = np.arange(data.shape[0])
             np.random.shuffle(indices)
@@ -72,7 +73,7 @@ class EEGDataset(tud.Dataset):
 
     def extract_band(self, data, sf):
         fft_vals = np.absolute(np.fft.rfft(data))
-        fft_freq = np.fft.rfftfreq(len(data), 1/sf)
+        fft_freq = np.fft.rfftfreq(data.shape[1], 1/sf)
 
         eeg_bands = [(4,8), (8,12)]
         res = []
@@ -80,7 +81,7 @@ class EEGDataset(tud.Dataset):
         for band in eeg_bands:
             freq_ix = np.where((fft_freq >= band[0]) &
                                (fft_freq <= band[1]))[0]
-            res.append(fft_vals[freq_ix])
+            res.append(fft_vals[:,freq_ix])
         return np.concatenate(res, axis=0)
 
     def __len__(self):
@@ -89,6 +90,6 @@ class EEGDataset(tud.Dataset):
     def __getitem__(self, index):
         return self.gt[self.mode][index], self.gt[self.mode+'_labels'][index]
 
-# d = EEGDataset('data/ru0718/test', 'EEG', 256, 30, 0.1, 'test')
-# print(len(d))
+d = EEGDataset('data/ru0718/train', 'EEG', 256, 15, 0.1, 'train', True)
+print(d[0][0].shape)
 
