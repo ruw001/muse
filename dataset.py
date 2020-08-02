@@ -7,14 +7,15 @@ import h5py
 from tqdm import tqdm
 
 class EEGDataset(tud.Dataset):
-    def __init__(self, path, type_, freq, winsize, stride, mode):
+    def __init__(self, path, type_, freq, winsize, stride, mode, extract):
         self.path = path
         self.type = type_
         self.freq = freq
         self.winsize = winsize
         self.stride = stride
         self.mode = mode
-        self.hf_name = "{}_{}_{}_{}.h5".format(mode, type_, winsize, stride)
+        self.extract = extract
+        self.hf_name = "{}_{}_{}_{}_{}.h5".format(mode, type_, winsize, stride, 'E' if extract else 'U')
         
         if not self.hf_name in os.listdir(path):
             files = [f for f in os.listdir(path) if self.type in f and f[0] != '.' and 'h5' not in f]
@@ -41,10 +42,19 @@ class EEGDataset(tud.Dataset):
                         data.append(signal[i:i+ws])
                     labels.append(label)
             
-            data = np.transpose(np.array(data), (0,2,1))
+            data = np.transpose(np.array(data), (0,2,1)) # n,c,l
             labels = np.array(labels)
             assert data.shape[0] == labels.shape[0]
 
+            if self.extract:
+                new_data = []
+                print('Extracting theta and alpha bands...')
+                for i in range(data.shape[0]):
+                    res = self.extract_band(data[i,:,:], self.freq) # c * len(bands)
+                    new_data.append(res)
+                data = np.array(new_data)
+            
+            # shuffle dataset
             indices = np.arange(data.shape[0])
             np.random.shuffle(indices)
 
@@ -59,6 +69,19 @@ class EEGDataset(tud.Dataset):
 
         self.gt = h5py.File(os.path.join(path, self.hf_name), 'r')
         print('Dataset loaded!')
+
+    def extract_band(self, data, sf):
+        fft_vals = np.absolute(np.fft.rfft(data))
+        fft_freq = np.fft.rfftfreq(len(data), 1/sf)
+
+        eeg_bands = [(4,8), (8,12)]
+        res = []
+
+        for band in eeg_bands:
+            freq_ix = np.where((fft_freq >= band[0]) &
+                               (fft_freq <= band[1]))[0]
+            res.append(fft_vals[freq_ix])
+        return np.concatenate(res, axis=0)
 
     def __len__(self):
         return len(self.gt[self.mode])

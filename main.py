@@ -31,6 +31,7 @@ parser.add_argument('-stride', type=float, default=0.1,
                     help='stride for generating dataset (s)')
 parser.add_argument('-outclass', type=int, default=5,
                     help='number of output classes')
+parser.add_argument('-E', action='store_true', help='extract freq bands and use FFT')
 
 parser.add_argument('-lr', type=float, default=0.002, help='learnign rate')
 parser.add_argument('-numEpoch', type=int, default=200, help='# epochs')
@@ -102,12 +103,12 @@ def main(isTest):
 
     if not opt.isTest and not opt.cv:
         dataset = EEGDataset(os.path.join(opt.datasetPath, 'train'),
-                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'train')
+                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'train', opt.E)
         train_len = int(len(dataset)*0.7)
         trainset, valset = tud.random_split(
             dataset, [train_len, len(dataset) - train_len])
         testset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
-                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
+                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E)
 
         train_loader = tud.DataLoader(trainset, batch_size=opt.batchsize)
         print('trainset size:', len(train_loader))
@@ -148,11 +149,11 @@ def main(isTest):
         for f in folders:
             if f != testIdx:
                 dataset = EEGDataset(os.path.join(
-                    opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'train')
+                    opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'train', opt.E)
                 cvsets.append(dataset)
             else:
                 testset = EEGDataset(os.path.join(
-                    opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
+                    opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E)
         
         # cvloaders = [tud.DataLoader(d, batch_size=opt.batchsize) for d in cvsets]
         test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
@@ -186,7 +187,7 @@ def main(isTest):
 
     else:
         dataset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
-                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'test')
+                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E)
         test_loader = tud.DataLoader(dataset, batch_size=opt.batchsize)
         logging.info('Testing start...')
         print('Testing start...')
