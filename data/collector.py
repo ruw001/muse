@@ -96,8 +96,9 @@ def changeTitle(task_name, tasks):
 if  __name__ == "__main__":
     # N-back configs
     tasks_ = [1,2,3,4,5]
+    random.shuffle(tasks_)
     task_name_ = 'R' # T for training, R for recorded
-    user_id_ = 'ru0718_test'#'x'
+    user_id_ = 'ru0802r5'#'x'
     interval_ = 2.25
     length_ = 30
 
