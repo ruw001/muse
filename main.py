@@ -133,7 +133,7 @@ def main(isTest):
                                 criterion, optimizer, device)
                 print('validation acc: {}, loss: {}'.format(acc, loss))
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
-                if acc > val_acc:
+                if acc >= val_acc:
                     val_acc = acc
                     saveModel(epoch+1, model, optimizer, os.path.join('exps',
                                                                     opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
@@ -184,7 +184,7 @@ def main(isTest):
                 print('validation acc: {}, loss: {}'.format(acc, loss))
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
             
-            if acc > val_acc:
+            if acc >= val_acc:
                 val_acc = acc
                 saveModel(epoch+1, model, optimizer, os.path.join('exps',
                             opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
