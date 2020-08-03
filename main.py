@@ -118,7 +118,8 @@ def main(isTest):
         print('valset size:', len(val_loader))
         test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
         print('testset size:', len(test_loader))
-
+        val_acc = 0
+        acc = 0
         for epoch in range(initEpoch, initEpoch + opt.numEpoch):
             logging.info('Epoch {} start...'.format(epoch+1))
             print('Epoch {} start...'.format(epoch+1))
@@ -132,15 +133,18 @@ def main(isTest):
                                 criterion, optimizer, device)
                 print('validation acc: {}, loss: {}'.format(acc, loss))
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
+                if acc > val_acc:
+                    val_acc = acc
+                    saveModel(epoch+1, model, optimizer, os.path.join('exps',
+                                                                    opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
+                    logging.info('model saved.')
                 logging.info('Testing start...')
                 print('Testing start...')
-                loss, acc = val(epoch, test_loader, model,
+                loss, t_acc = val(epoch, test_loader, model,
                                 criterion, optimizer, device)
-                print('test acc: {}, loss: {}'.format(acc, loss))
-                logging.info('test acc: {}, loss: {}'.format(acc, loss))
-                saveModel(epoch+1, model, optimizer, os.path.join('exps',
-                                                                  opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
-                logging.info('model saved.')
+                print('test acc: {}, loss: {}'.format(t_acc, loss))
+                logging.info('test acc: {}, loss: {}'.format(t_acc, loss))
+                
     elif opt.cv:
         cvsets = []
         testset = []

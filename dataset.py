@@ -26,7 +26,7 @@ class EEGDataset(tud.Dataset):
             labels = []
             print('Generating dataset...')
             for f in tqdm(files):
-                label = int(f.split('_')[2][1:])-1 # TODO: stop using '_' in userid!
+                label = int(f.split('_')[1][1:])-1 # stop using '_' in userid!
                 if label not in outClass:
                     continue
                 # new label
