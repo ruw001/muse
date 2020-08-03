@@ -81,7 +81,8 @@ def main(isTest):
         model = EEG_CNN(opt.winsize*opt.freq, len(opt.outclass))
 
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr)
+    # optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
 
     initEpoch = 0
 
