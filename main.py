@@ -45,6 +45,7 @@ parser.add_argument('-signalType', default='EEG',
                     help='specify the type of your signal data')
 parser.add_argument('-cnn', default='resnet',
                     help='specify the model you use for training/testing')  # vs. 'normal'
+parser.add_argument('-patience', type=int, default=5, help='patience for early stopper')
 
 opt = parser.parse_args()
 
