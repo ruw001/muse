@@ -123,7 +123,7 @@ def main(isTest):
         print('testset size:', len(test_loader))
         val_acc = 0
         acc = 0
-        early_stopper = EarlyStopping(patience=20, verbose=True) #TODO: make patience a tunable parameter
+        early_stopper = EarlyStopping(patience=opt.patience, verbose=True) #TODO: make patience a tunable parameter
         for epoch in range(initEpoch, initEpoch + opt.numEpoch):
             logging.info('Epoch {} start...'.format(epoch+1))
             print('Epoch {} start...'.format(epoch+1))
@@ -173,7 +173,7 @@ def main(isTest):
                 testset = EEGDataset(os.path.join(
                     opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
         
-        early_stopper = EarlyStopping(patience=5, verbose=True)
+        early_stopper = EarlyStopping(patience=opt.patience, verbose=True)
         # cvloaders = [tud.DataLoader(d, batch_size=opt.batchsize) for d in cvsets]
         test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
         for cluster in range(initEpoch, initEpoch + opt.numEpoch, len(cvsets)):
