@@ -172,7 +172,7 @@ def main(isTest):
                 testset = EEGDataset(os.path.join(
                     opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
         
-        early_stopper = EarlyStopping(patience=5, verbose=True, delta=1e-5)
+        early_stopper = EarlyStopping(patience=5, verbose=True)
         # cvloaders = [tud.DataLoader(d, batch_size=opt.batchsize) for d in cvsets]
         test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
         for cluster in range(initEpoch, initEpoch + opt.numEpoch, len(cvsets)):
