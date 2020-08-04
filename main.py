@@ -197,6 +197,8 @@ def main(isTest):
                 avg_val_loss += loss
             # calculate avg val loss for early stopper
             avg_val_loss /= len(cvsets)
+            logging.info('avg validation loss: {}'.format(avg_val_loss))
+            print('avg validation loss: {}'.format(avg_val_loss))
             decision = early_stopper(avg_val_loss)
 
             logging.info('Testing start...')
