@@ -4,6 +4,7 @@ from model import EEG_CNN
 from dataset import EEGDataset
 from train import train, val
 from resnet import ResNet, BasicBlock, Bottleneck
+from earlystop import EarlyStopping
 import logging
 import os
 import argparse
@@ -38,7 +39,7 @@ parser.add_argument('-E', action='store_true', help='extract freq bands and use 
 parser.add_argument('-lr', type=float, default=0.002, help='learnign rate')
 parser.add_argument('-numEpoch', type=int, default=200, help='# epochs')
 parser.add_argument('-batchsize', type=int, default=32, help='batch size')
-parser.add_argument('-valInterval', type=int, default=5,
+parser.add_argument('-valInterval', type=int, default=1,
                     help='interval for validation')
 parser.add_argument('-signalType', default='EEG',
                     help='specify the type of your signal data')
@@ -121,6 +122,7 @@ def main(isTest):
         print('testset size:', len(test_loader))
         val_acc = 0
         acc = 0
+        early_stopper = EarlyStopping(patience=20, verbose=True) #TODO: make patience a tunable parameter
         for epoch in range(initEpoch, initEpoch + opt.numEpoch):
             logging.info('Epoch {} start...'.format(epoch+1))
             print('Epoch {} start...'.format(epoch+1))
@@ -132,19 +134,27 @@ def main(isTest):
             if (epoch+1) % opt.valInterval == 0:
                 loss, acc = val(epoch, val_loader, model,
                                 criterion, optimizer, device)
-                print('validation acc: {}, loss: {}'.format(acc, loss))
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
-                if acc >= val_acc:
-                    val_acc = acc
-                    saveModel(epoch+1, model, optimizer, os.path.join('exps',
-                                                                    opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
-                    logging.info('model saved.')
+                print('validation acc: {}, loss: {}'.format(acc, loss))
+                
+                decision = early_stopper(loss)
+
                 logging.info('Testing start...')
                 print('Testing start...')
                 loss, t_acc = val(epoch, test_loader, model,
-                                criterion, optimizer, device)
+                                  criterion, optimizer, device)
                 print('test acc: {}, loss: {}'.format(t_acc, loss))
                 logging.info('test acc: {}, loss: {}'.format(t_acc, loss))
+
+                if decision == 'save':
+                    saveModel(epoch+1, model, optimizer, os.path.join('exps',
+                                                                    opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
+                    logging.info('model saved.')
+                    print('model saved.')
+                elif decision == 'stop':
+                    logging.info('early stopped!')
+                    print('early stopped!')
+                    break         
                 
     elif opt.cv:
         cvsets = []
@@ -162,11 +172,11 @@ def main(isTest):
                 testset = EEGDataset(os.path.join(
                     opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
         
-        val_acc = 0
-        acc = 0
+        early_stopper = EarlyStopping(patience=5, verbose=True)
         # cvloaders = [tud.DataLoader(d, batch_size=opt.batchsize) for d in cvsets]
         test_loader = tud.DataLoader(testset, batch_size=opt.batchsize)
         for cluster in range(initEpoch, initEpoch + opt.numEpoch, len(cvsets)):
+            avg_val_loss = 0
             for i in range(len(cvsets)):
                 train_dataset = tud.ConcatDataset(
                     [cvsets[l] for l in range(len(cvsets)) if l != i])
@@ -182,21 +192,29 @@ def main(isTest):
                 print('train loss: {}'.format(loss))
                 loss, acc = val(epoch, val_loader, model,
                                 criterion, optimizer, device)
-                print('validation acc: {}, loss: {}'.format(acc, loss))
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
-            
-            if acc >= val_acc:
-                val_acc = acc
-                saveModel(epoch+1, model, optimizer, os.path.join('exps',
-                            opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
-                logging.info('model saved.')
+                print('validation acc: {}, loss: {}'.format(acc, loss))
+                avg_val_loss += loss
+            # calculate avg val loss for early stopper
+            avg_val_loss /= len(cvsets)
+            decision = early_stopper(avg_val_loss)
 
             logging.info('Testing start...')
             print('Testing start...')
             loss, t_acc = val(epoch, test_loader, model,
                             criterion, optimizer, device)
-            print('test acc: {}, loss: {}'.format(t_acc, loss))
             logging.info('test acc: {}, loss: {}'.format(t_acc, loss))
+            print('test acc: {}, loss: {}'.format(t_acc, loss))
+
+            if decision == 'save':
+                saveModel(epoch+1, model, optimizer, os.path.join('exps',
+                                                                  opt.exp, 'model_epoch{}.pth'.format(epoch+1)))
+                logging.info('model saved.')
+                print('model saved.')
+            elif decision == 'stop':
+                logging.info('early stopped!')
+                print('early stopped!')
+                break
 
     else:
         dataset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
