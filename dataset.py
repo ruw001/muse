@@ -43,11 +43,12 @@ class EEGDataset(tud.Dataset):
                 st = int(self.stride * self.freq)
 
                 for i in range(0, signal.shape[0], st):
+                    labels.append(label)
                     if i+ws > signal.shape[0]:
                         data.append(signal[-ws:])
+                        break
                     else:
                         data.append(signal[i:i+ws])
-                    labels.append(label)
             
             data = np.transpose(np.array(data), (0,2,1)) # n,c,l
             labels = np.array(labels)
