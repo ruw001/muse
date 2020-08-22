@@ -1,8 +1,59 @@
 import torch.nn as nn
 
+
 class EEG_CNN(nn.Module):
     def __init__(self, winsize, numout):
         super(EEG_CNN, self).__init__()
+        # input channel must be 4
+        conv_st2 = []
+        outsize = winsize
+        st = 2
+        k = 4
+        for i in range(3):
+            conv_st2.append(nn.Conv1d(4, 4, k, st))
+            outsize = int((outsize - k)/st) + 1
+        self.conv_st2 = nn.ModuleList(conv_st2)
+
+        conv_st4 = []
+        st = 4
+        k = 8
+        for i in range(2):
+            conv_st4.append(nn.Conv1d(4, 4, k, st))
+            outsize = int((outsize - k)/st) + 1
+        self.conv_st4 = nn.ModuleList(conv_st4)
+
+        st = 8
+        k = 16
+        self.conv_st8 = nn.Conv1d(4, 8, k, st)
+        outsize = int((outsize - k)/st) + 1
+
+        self.relu = nn.ReLU()
+        self.drop = nn.Dropout()
+
+        self.fc_1 = nn.Linear(outsize*8, 64)
+        self.fc_2 = nn.Linear(64, 32)
+        self.fc_3 = nn.Linear(32, numout)
+
+    def forward(self, x):
+        out = x
+        for i in range(len(self.conv_st2)):
+            out = self.conv_st2[i](out)
+            out = self.relu(out)
+        for i in range(len(self.conv_st4)):
+            out = self.conv_st4[i](out)
+            out = self.relu(out)
+        out = self.relu(self.conv_st8(out))
+        out = out.view(out.shape[0], -1)
+        out = self.drop(out)
+        out = self.fc_1(out)
+        out = self.drop(self.relu(out))
+        out = self.fc_2(out)
+        out = self.fc_3(out)
+        return out
+
+class _EEG_CNN(nn.Module):
+    def __init__(self, winsize, numout):
+        super(_EEG_CNN, self).__init__()
         conv_st2 = []
         bn_st2 = []
         outsize = winsize

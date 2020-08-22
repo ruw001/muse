@@ -80,6 +80,7 @@ def main(isTest):
     if opt.cnn == 'resnet':
         model = ResNet(8 if opt.E else 4, BasicBlock, [2, 2, 2, 2], num_classes=len(opt.outclass))
     else:
+        assert opt.E == False
         model = EEG_CNN(opt.winsize*opt.freq, len(opt.outclass))
 
     criterion = torch.nn.CrossEntropyLoss()
