@@ -14,11 +14,11 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, 
     total = 0
     acc = 0
     run_loss = 0
-    tolarance = 0.4 / (numOut - 1)
+    tolarance = 0.5 / (numOut - 1)
     for (data, labels) in tqdm(dataLoader):
         # data = data.double()
         if prob == 'reg':
-            labels = torch.unsqueeze((labels + 1) * 0.2, 1)
+            labels = torch.unsqueeze(labels * (1/(numOut -1)), 1)
             if device == 'cpu':
                 data, labels = data.float(), labels.float()
             else:
@@ -42,7 +42,7 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, 
                 num_true += pred.eq(labels).sum().item()
                 total += labels.size(0)
             else: # reg
-                num_true += (abs(output - labels) <= tolarance).sum().item()
+                num_true += (abs(output - labels) < tolarance).sum().item()
                 print(labels)
                 print(output)
                 print(num_true)
