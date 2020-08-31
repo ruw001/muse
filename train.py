@@ -43,7 +43,11 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, 
                 total += labels.size(0)
             else: # reg
                 num_true += (abs(output - labels) <= tolarance).sum().item()
+                print(labels)
+                print(output)
+                print(num_true)
                 total += labels.size(0)
+                print(total)
 
     run_loss /= nIter
     if split == 'val':
