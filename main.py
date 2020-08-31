@@ -72,9 +72,10 @@ def saveModel(epoch, model, optimizer, save_path):
 
 def main(isTest):
     print(opt)
-    logging.info('\nexp name: {}\ndata: {}\ntype: {}\noutclass={}\nwinsize={}\nstride={}\nmodel: {}\nlr={}\nbatchsize={}\ngpu={}, {}'
-                 .format(opt.exp, opt.datasetPath, opt.signalType, opt.outclass, opt.winsize,
-                         opt.stride, opt.cnn, opt.lr, opt.batchsize, opt.useGPU, opt.gpuids))
+    # logging.info('\nexp name: {}\ndata: {}\ntype: {}\noutclass={}\nwinsize={}\nstride={}\nmodel: {}\nlr={}\nbatchsize={}\ngpu={}, {}'
+    #              .format(opt.exp, opt.datasetPath, opt.signalType, opt.outclass, opt.winsize,
+    #                      opt.stride, opt.cnn, opt.lr, opt.batchsize, opt.useGPU, opt.gpuids))
+    logging.info(opt)
     if not opt.isTest:
         logging.info('Training start!')
     else:
