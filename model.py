@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 class EEG_CNN(nn.Module):
-    def __init__(self, winsize, numout):
+    def __init__(self, winsize, numout, prob='clf'):
         super(EEG_CNN, self).__init__()
         # input channel must be 4
         conv_st2 = []
@@ -33,6 +33,8 @@ class EEG_CNN(nn.Module):
         self.fc_1 = nn.Linear(outsize*8, 64)
         self.fc_2 = nn.Linear(64, 32)
         self.fc_3 = nn.Linear(32, numout)
+        self.fc_reg = nn.Linear(32, 1)
+        self.prob = prob
 
     def forward(self, x):
         out = x
@@ -48,12 +50,15 @@ class EEG_CNN(nn.Module):
         out = self.fc_1(out)
         out = self.drop(self.relu(out))
         out = self.fc_2(out)
-        out = self.fc_3(out)
+        if self.prob == 'clf':
+            out = self.fc_3(out)
+        else:
+            out = self.fc_reg(out)
         return out
 
-class _EEG_CNN(nn.Module):
+class Depricated_EEG_CNN(nn.Module):
     def __init__(self, winsize, numout):
-        super(_EEG_CNN, self).__init__()
+        super(Depricated_EEG_CNN, self).__init__()
         conv_st2 = []
         bn_st2 = []
         outsize = winsize

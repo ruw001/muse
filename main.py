@@ -20,6 +20,8 @@ parser.add_argument('-outclass', nargs='+', type=int,
                     default=[0, 1, 2, 3, 4], help='output classes')
 parser.add_argument('-cv', action='store_true',
                     help='if this exp uses cross validation')
+parser.add_argument('-prob', default='clf',
+                    help='clf or reg')
 
 # args that always change (for testing)
 parser.add_argument('-isTest', action='store_true',
@@ -69,6 +71,7 @@ def saveModel(epoch, model, optimizer, save_path):
 
 
 def main(isTest):
+    print(opt)
     logging.info('\nexp name: {}\ndata: {}\ntype: {}\noutclass={}\nwinsize={}\nstride={}\nmodel: {}\nlr={}\nbatchsize={}\ngpu={}, {}'
                  .format(opt.exp, opt.datasetPath, opt.signalType, opt.outclass, opt.winsize,
                          opt.stride, opt.cnn, opt.lr, opt.batchsize, opt.useGPU, opt.gpuids))
@@ -78,12 +81,15 @@ def main(isTest):
         logging.info('Testing start!')
 
     if opt.cnn == 'resnet':
-        model = ResNet(8 if opt.E else 4, BasicBlock, [2, 2, 2, 2], num_classes=len(opt.outclass))
+        model = ResNet(8 if opt.E else 4, BasicBlock, [2, 2, 2, 2], num_classes=len(opt.outclass), prob=opt.prob)
     else:
         assert opt.E == False
-        model = EEG_CNN(opt.winsize*opt.freq, len(opt.outclass))
+        model = EEG_CNN(opt.winsize*opt.freq, len(opt.outclass), prob=opt.prob)
 
-    criterion = torch.nn.CrossEntropyLoss()
+    if opt.prob == 'clf':
+        criterion = torch.nn.CrossEntropyLoss()
+    else:
+        criterion = torch.nn.MSELoss()
     # optimizer = torch.optim.RMSprop(model.parameters(), lr=opt.lr)
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
 
@@ -129,13 +135,13 @@ def main(isTest):
             logging.info('Epoch {} start...'.format(epoch+1))
             print('Epoch {} start...'.format(epoch+1))
             loss, _ = train(epoch, train_loader, model,
-                            criterion, optimizer, device)
+                            criterion, optimizer, device, len(opt.outclass), opt.prob)
             logging.info('train loss: {}'.format(loss))
             print('train loss: {}'.format(loss))
 
             if (epoch+1) % opt.valInterval == 0:
                 loss, acc = val(epoch, val_loader, model,
-                                criterion, optimizer, device)
+                                criterion, optimizer, device, len(opt.outclass), opt.prob)
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
                 print('validation acc: {}, loss: {}'.format(acc, loss))
                 
@@ -144,7 +150,7 @@ def main(isTest):
                 logging.info('Testing start...')
                 print('Testing start...')
                 loss, t_acc = val(epoch, test_loader, model,
-                                  criterion, optimizer, device)
+                                  criterion, optimizer, device, len(opt.outclass), opt.prob)
                 print('test acc: {}, loss: {}'.format(t_acc, loss))
                 logging.info('test acc: {}, loss: {}'.format(t_acc, loss))
 
@@ -189,11 +195,11 @@ def main(isTest):
                 logging.info('Epoch {} start...'.format(epoch+1))
                 print('Epoch {} start...'.format(epoch+1))
                 loss, _ = train(epoch, train_loader, model,
-                                criterion, optimizer, device)
+                                criterion, optimizer, device, len(opt.outclass), opt.prob)
                 logging.info('train loss: {}'.format(loss))
                 print('train loss: {}'.format(loss))
                 loss, acc = val(epoch, val_loader, model,
-                                criterion, optimizer, device)
+                                criterion, optimizer, device, len(opt.outclass), opt.prob)
                 logging.info('validation acc: {}, loss: {}'.format(acc, loss))
                 print('validation acc: {}, loss: {}'.format(acc, loss))
                 avg_val_loss += loss
@@ -206,7 +212,7 @@ def main(isTest):
             logging.info('Testing start...')
             print('Testing start...')
             loss, t_acc = val(epoch, test_loader, model,
-                            criterion, optimizer, device)
+                              criterion, optimizer, device, len(opt.outclass), opt.prob)
             logging.info('test acc: {}, loss: {}'.format(t_acc, loss))
             print('test acc: {}, loss: {}'.format(t_acc, loss))
 
@@ -226,7 +232,8 @@ def main(isTest):
         test_loader = tud.DataLoader(dataset, batch_size=opt.batchsize)
         logging.info('Testing start...')
         print('Testing start...')
-        loss, acc = val(0, test_loader, model, criterion, optimizer, device)
+        loss, acc = val(0, test_loader, model, criterion,
+                        optimizer, device, len(opt.outclass), opt.prob)
         print('test acc: {}, loss: {}'.format(acc, loss))
         logging.info('test acc: {}, loss: {}'.format(acc, loss))
 

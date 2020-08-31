@@ -80,7 +80,7 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, in_channel, block, layers, num_classes):
+    def __init__(self, in_channel, block, layers, num_classes, prob='clf'):
         self.inplanes = 64
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv1d(in_channel, 64, kernel_size=3, stride=1, padding=1, bias=True)
@@ -101,6 +101,9 @@ class ResNet(nn.Module):
         # self.avgpool = nn.AvgPool2d((5, 1), stride=1)
         self.avgpool = nn.AdaptiveAvgPool1d(1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc_reg = nn.Linear(512 * block.expansion, 1)
+
+        self.prob = prob
 
         for m in self.modules():
             if isinstance(m, nn.Conv1d):
@@ -148,8 +151,12 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         # print(x.size())
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
 
+        if self.prob == 'clf':
+            x = self.fc(x)
+        else: # == 'reg'
+            x = self.fc_reg(x)
+            
         # x = self.conv_merge(x)
         # print(x.size())
         # x = torch.squeeze(x, dim=2)
