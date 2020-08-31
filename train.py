@@ -19,10 +19,16 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, 
         # data = data.double()
         if prob == 'reg':
             labels = (labels + 1) / 5
-        if device == 'cpu':
-            data, labels = data.float(), labels.long()
-        else:
-            data, labels = data.to(device, dtype=torch.float), labels.to(device, dtype=torch.long)
+            if device == 'cpu':
+                data, labels = data.float(), labels.float()
+            else:
+                data, labels = data.to(device, dtype=torch.float), labels.to(
+                    device, dtype=torch.float)
+        else: # clf
+            if device == 'cpu':
+                data, labels = data.float(), labels.long()
+            else:
+                data, labels = data.to(device, dtype=torch.float), labels.to(device, dtype=torch.long)
         optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, labels)
