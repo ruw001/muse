@@ -18,7 +18,7 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, 
     for (data, labels) in tqdm(dataLoader):
         # data = data.double()
         if prob == 'reg':
-            labels = (labels + 1) / 5
+            labels = torch.unsqueeze((labels + 1) * 0.2, 1)
             if device == 'cpu':
                 data, labels = data.float(), labels.float()
             else:
