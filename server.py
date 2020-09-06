@@ -57,8 +57,7 @@ parser.add_argument('-modelPath', default='',
 parser.add_argument('-useGPU', action='store_true', help='if use GPU or not')
 parser.add_argument('-gpuids', nargs='+', type=int,
                     default=[0], help='GPU IDs')
-parser.add_argument('-outclass', nargs='+', type=int,
-                    default=[0, 1, 2, 3, 4], help='output classes')
+parser.add_argument('-numClass', type=int, default=2, help='#output classes')
 parser.add_argument('-E', action='store_true',
                     help='extract freq bands and use FFT')
 
@@ -69,7 +68,7 @@ freq = opt.freq
 window = np.zeros((opt.winsize * freq, 4))
 
 model = ResNet(8 if opt.E else 4, BasicBlock, [
-               2, 2, 2, 2], num_classes=len(opt.outclass), prob=opt.prob)
+               2, 2, 2, 2], num_classes=opt.numClass, prob='clf')
 if opt.useGPU:
     device = 'cuda:{}'.format(opt.gpuids[0])
     model = model.to(device, dtype=torch.float)
