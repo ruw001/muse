@@ -5,6 +5,7 @@ from pylsl import StreamInlet, resolve_stream
 from datetime import datetime
 import os
 import random
+import argparse
 
 # global variables
 btnState = False # False when not clicked, True when clicked and in process
@@ -94,15 +95,21 @@ def changeTitle(task_name, tasks):
 
 
 if  __name__ == "__main__":
-    # N-back configs
-    tasks_ = [1,2,3,4,5]
-    random.shuffle(tasks_)
-    task_name_ = 'R' # T for training, R for recorded
-    user_id_ = 'ru0802r5'#'x'
-    interval_ = 2.25
-    length_ = 30
+    parser = argparse.ArgumentParser(description='Input for EEG data collector')
+    parser.add_argument('-tasks', nargs='+', type=int, default=[1,3,5], help='Tasks')
+    parser.add_argument('-length', type=int, default=30, help='length of the sequence')
+    parser.add_argument('-userid', type=str, default='xxx', help='user id')
+    parser.add_argument('-T', action='store_true', help='if the task is for training users')
 
-    lock = threading.Lock()
+    opt = parser.parse_args()
+
+    # N-back configs
+    tasks_ = opt.tasks #[1,3,5]
+    random.shuffle(tasks_)
+    task_name_ = 'T' if opt.T else 'R' # T for training, R for recorded
+    user_id_ = opt.userid
+    interval_ = 2.25
+    length_ = opt.length
 
     # TKinter stuff
     mainwindow = tkinter.Tk()

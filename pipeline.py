@@ -7,8 +7,6 @@ import time
 from queue import Queue
 from socket import *
 
-TEST = True
-
 class EEGThread(threading.Thread):
     def __init__(self, tID, winsize, stride):
         threading.Thread.__init__(self)
@@ -126,13 +124,16 @@ def recv_into(arr, source):
 
 parser = argparse.ArgumentParser(description='Input for EEG AugCog system')
 parser.add_argument('-winsize', type=int, default=30, help='window size (s)')
-parser.add_argument('-stride', type=float, default=0.1, help='window size (s)')
-parser.add_argument('-ip', type=str, default='localhost', help='ip address of the server')
+parser.add_argument('-stride', type=float, default=1, help='window size (s)')
+parser.add_argument('-ip', type=str, default='137.110.115.9', help='ip address of the server')
+parser.add_argument('-T', action='store_true', help='TEST mode')
 
 opt = parser.parse_args()
 
 dataBuffer = Queue()
 cmdBuffer = Queue()
+
+TEST = opt.T
 
 th1 = EEGThread(0, opt.winsize, opt.stride)
 th2 = MitigationThread(1, '')
