@@ -101,7 +101,7 @@ with socket(AF_INET, SOCK_STREAM) as server:
             # permute & extract features
             data = np.transpose(window) # c x l
             if opt.E:
-                data = extract_band(window, freq)  # c = c * len(bands), c x l
+                data = extract_band(data, freq)  # c = c * len(bands), c x l
             data = np.expand_dims(data, axis=0) # 1 x c x l
             data = torch.from_numpy(data)
             print('predicting...')
