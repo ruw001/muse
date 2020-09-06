@@ -146,6 +146,7 @@ while True:
     try:
         client = socket(AF_INET, SOCK_STREAM)
         client.connect((IP, PORT))
+        print('Connected!')
         break
     except Exception as e:
         print(e)
