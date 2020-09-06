@@ -80,12 +80,13 @@ else:
 print('Loading model parameters from {}...'.format(opt.modelPath))
 checkpoint = torch.load(opt.modelPath)
 model.load_state_dict(checkpoint['state_dict'])
-
+print('Model loaded!')
 
 with socket(AF_INET, SOCK_STREAM) as server:
     server.bind((HOST, PORT))
     count = 0
     server.listen()
+    print('Waiting for client...')
     conn, addr = server.accept()
     while True:
         try:
