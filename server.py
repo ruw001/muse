@@ -111,9 +111,10 @@ with socket(AF_INET, SOCK_STREAM) as server:
                 data = data.to(device, dtype=torch.float)
             output = model(data)
             _, pred = output.max(1)
-            print(pred)
-            conn.send(bytes(str(count), 'utf-8'))
-            print('result sent!' + str(count))
+            result = pred[0].item()
+            print(result)
+            conn.send(bytes(str(result), 'utf-8'))
+            print('result sent!', result, 'count: ' + str(count))
             count += 1
         except Exception as e:
             print(e)
