@@ -127,6 +127,7 @@ def recv_into(arr, source):
 parser = argparse.ArgumentParser(description='Input for EEG AugCog system')
 parser.add_argument('-winsize', type=int, default=30, help='window size (s)')
 parser.add_argument('-stride', type=float, default=0.1, help='window size (s)')
+parser.add_argument('-ip', type=str, default='localhost', help='ip address of the server')
 
 opt = parser.parse_args()
 
@@ -138,7 +139,7 @@ th2 = MitigationThread(1, '')
 th1.start()
 th2.start()
 
-IP = 'localhost'
+IP = opt.ip
 PORT = 25000
 
 while True:
@@ -154,7 +155,7 @@ while True:
 while True:
     window = dataBuffer.get()  # block
     print('data consumed!')
-    data = np.array(window, dtype=float)
+    data = np.array(window, dtype=float) # l x c
 
     # send_from(data, client)
     # workload = int(str(client.recv(1024), 'utf-8'))
