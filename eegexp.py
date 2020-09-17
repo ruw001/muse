@@ -63,45 +63,63 @@ def makeNewInput(data, sf, bands):
     assert newdata.shape == (data.shape[0], data.shape[1]*len(bands))
     return newdata
 
-datapath = 'data/ru0718'
-type_ = 'EEG'
-winsize = 30
-stride = 0.1
+def svm_test():
+  datapath = 'data/ru0718'
+  type_ = 'EEG'
+  winsize = 30
+  stride = 0.1
 
-trainpath = os.path.join(datapath, 'train', 'train_{}_{}_{}.h5'.format(type_, winsize, stride))
-testpath = os.path.join(datapath, 'test', 'test_{}_{}_{}.h5'.format(type_, winsize, stride))
+  trainpath = os.path.join(datapath, 'train', 'train_{}_{}_{}.h5'.format(type_, winsize, stride))
+  testpath = os.path.join(datapath, 'test', 'test_{}_{}_{}.h5'.format(type_, winsize, stride))
 
-trainfile = h5py.File(trainpath, 'r')
-testfile = h5py.File(testpath, 'r')
+  trainfile = h5py.File(trainpath, 'r')
+  testfile = h5py.File(testpath, 'r')
 
-traininput = trainfile['train']
-trainoutput = trainfile['train_labels']
+  traininput = trainfile['train']
+  trainoutput = trainfile['train_labels']
 
-testinput = testfile['test']
-testoutput = testfile['test_labels']
+  testinput = testfile['test']
+  testoutput = testfile['test_labels']
 
-print(traininput.shape)
-print(testinput.shape)
+  print(traininput.shape)
+  print(testinput.shape)
 
-sf_ = 256
-win = 30*sf_
-bands_ = [(4, 8), (8, 12)] # theta, alpha
+  sf_ = 256
+  win = 30*sf_
+  bands_ = [(4, 8), (8, 12)] # theta, alpha
 
-print('extracting freq bands...')
-new_train = makeNewInput(traininput, sf_, bands_)
-new_test = makeNewInput(testinput, sf_, bands_)
+  print('extracting freq bands...')
+  new_train = makeNewInput(traininput, sf_, bands_)
+  new_test = makeNewInput(testinput, sf_, bands_)
 
-print('training...')
-clf = svm.SVC(decision_function_shape='ovo')
-clf.fit(new_train, trainoutput)
-print('done!')
-test_res = clf.predict(new_test)
+  print('training...')
+  clf = svm.SVC(decision_function_shape='ovo')
+  clf.fit(new_train, trainoutput)
+  print('done!')
+  test_res = clf.predict(new_test)
 
-print('testing result is', (test_res == testoutput).sum()/len(test_res))
+  print('testing result is', (test_res == testoutput).sum()/len(test_res))
+
+def z_score_test():
+  from scipy import stats
+  path = 'data/ru0802/1/ru0802_R1_30_EEG_1596419978.3037233_67.5.txt'
+  signal = []
+  with open(path, 'r') as infile:
+    lines = infile.readlines()
+    for l in lines:
+        entries = l.split(',')
+        # need to change if data format is different
+        electrodes = [float(e) for e in entries[1:5]]
+        signal.append(electrodes)
+  signal = np.array(signal)
+  signal = stats.zscore(signal, axis=0)
+  ws = int(30 * 256)
+  st = int(0.1 * 256)
+
+  print(signal)
+  print(signal.shape)
 
 
-
-
-
+z_score_test()
 
 

@@ -5,6 +5,7 @@ import numpy as np
 import torch.utils.data as tud
 import h5py
 from tqdm import tqdm
+from scipy import stats
 
 class EEGDataset(tud.Dataset):
     def __init__(self, path, type_, freq, winsize, stride, mode, extract, outClass):
@@ -39,6 +40,8 @@ class EEGDataset(tud.Dataset):
                         electrodes = [float(e) for e in entries[1:5]] # need to change if data format is different
                         signal.append(electrodes)
                 signal = np.array(signal)
+                if not self.extract:
+                    signal = stats.zscore(signal, axis=0)
                 ws = int(self.winsize * self.freq)
                 st = int(self.stride * self.freq)
 
