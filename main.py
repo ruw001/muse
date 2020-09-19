@@ -84,7 +84,7 @@ def main(isTest):
 
     if opt.cnn == 'resnet':
         if opt.E == 'E':
-            model = ResNet(8, BasicBlock, [2, 2, 2, 2], num_classes=len(
+            model = ResNet(4*6, BasicBlock, [2, 2, 2, 2], num_classes=len(
                 opt.outclass), prob=opt.prob)
         elif opt.E == 'N':
             model = ResNet(4, BasicBlock, [2, 2, 2, 2], num_classes=len(

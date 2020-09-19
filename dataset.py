@@ -108,7 +108,7 @@ class EEGDataset(tud.Dataset):
         fft_vals = np.absolute(np.fft.rfft(data))
         fft_freq = np.fft.rfftfreq(data.shape[1], 1/sf)
 
-        eeg_bands = [(4,8), (8,12)]
+        eeg_bands = [(4,8), (8,12), (13,17), (18,22), (23,27), (28,32)]
         res = []
 
         for band in eeg_bands:
