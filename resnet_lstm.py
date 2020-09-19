@@ -252,3 +252,6 @@ class ResNetLSTM(nn.Module):
 
 def resnet18_lstm(in_channel, num_classes):
     return ResNetLSTM(in_channel, BasicBlock, [2, 2, 2, 2], num_classes)
+
+def resnet101_lstm(in_channel, num_classes):
+    return ResNetLSTM(in_channel, Bottleneck, [3, 4, 23, 3], num_classes)
