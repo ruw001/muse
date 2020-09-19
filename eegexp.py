@@ -4,6 +4,8 @@ import h5py
 from scipy import signal
 import numpy as np
 from tqdm import tqdm
+from scipy import signal as scisig
+import matplotlib.pyplot as plt
 
 
 def bandpower(data, sf, bands, relative=False):
@@ -119,7 +121,59 @@ def z_score_test():
   print(signal)
   print(signal.shape)
 
+def stft_psd_extract(freq, data):
+  '''
+    data.shape: 30*256 x 4 
+  '''
+  psds = []
+  for j in range(4):
+    f, t, zxx = scisig.stft(data[:,j], fs=freq, nperseg=freq, nfft=freq, axis=0)
+    # if j == 0:
+    #   print(f, f.shape)
+    #   print(t, t.shape)
+    zxx = zxx[3:56, :]
+    psds.append(np.abs(zxx))
+  return np.array(psds)
 
-z_score_test()
 
+def conv_2d_test():
+  from scipy import stats
+  path = 'data/ru0802/1/ru0802_R1_30_EEG_1596419978.3037233_67.5.txt'
+  signal = []
+  with open(path, 'r') as infile:
+    lines = infile.readlines()
+    for l in lines:
+        entries = l.split(',')
+        # need to change if data format is different
+        electrodes = [float(e) for e in entries[1:5]]
+        signal.append(electrodes)
+  
+  signal = np.array(signal)
+  winsize = 30
+  stride = 0.1
+  freq = 256
+  ws = int(winsize * freq)
+  st = int(stride * freq)
+
+  data = []
+
+  for i in range(0, signal.shape[0], st):
+    if i+ws > signal.shape[0]:
+      data.append(stft_psd_extract(freq, signal[-ws:]))
+      break
+    else:
+      data.append(stft_psd_extract(freq, signal[i:i+ws]))
+
+  t = np.arange(0, 30.5, 0.5)
+  f = np.arange(3, 56)
+  print(np.array(data).shape)
+  for psd in data:
+    for i in range(4):
+      plt.pcolormesh(t, f, psd[i,:], shading='gouraud')
+      plt.title('STFT Magnitude')
+      plt.ylabel('Frequency [Hz]')
+      plt.xlabel('Time [sec]')
+      plt.show()
+
+conv_2d_test()
 

@@ -36,7 +36,7 @@ parser.add_argument('-freq', type=int, default=256,
 parser.add_argument('-stride', type=float, default=0.1,
                     help='stride for generating dataset (s)')
 
-parser.add_argument('-E', action='store_true', help='extract freq bands and use FFT')
+parser.add_argument('-E', default='P', help='N: none, E: extract, P: PSD')
 
 parser.add_argument('-lr', type=float, default=0.002, help='learnign rate')
 parser.add_argument('-numEpoch', type=int, default=200, help='# epochs')
@@ -82,9 +82,16 @@ def main(isTest):
         logging.info('Testing start!')
 
     if opt.cnn == 'resnet':
-        model = ResNet(8 if opt.E else 4, BasicBlock, [2, 2, 2, 2], num_classes=len(opt.outclass), prob=opt.prob)
+        if opt.E == 'E':
+            model = ResNet(8, BasicBlock, [2, 2, 2, 2], num_classes=len(
+                opt.outclass), prob=opt.prob)
+        elif opt.E == 'N':
+            model = ResNet(4, BasicBlock, [2, 2, 2, 2], num_classes=len(
+                opt.outclass), prob=opt.prob)
+        elif opt.E == 'P':
+            model = ResNetLSTM(...)
     else:
-        assert opt.E == False
+        assert opt.E == 'N'
         model = EEG_CNN(opt.winsize*opt.freq, len(opt.outclass), prob=opt.prob)
 
     if opt.prob == 'clf':
