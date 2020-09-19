@@ -238,6 +238,7 @@ class ResNetLSTM(nn.Module):
         x = torch.flatten(x, 2)
 
         x = x.permute(0, 2, 1)
+        self.lstm.flatten_parameters()
         x, _ = self.bilstm(x)
         x = torch.flatten(x, 1)
         
