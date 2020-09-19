@@ -238,7 +238,7 @@ class ResNetLSTM(nn.Module):
         x = torch.flatten(x, 2)
 
         x = x.permute(0, 2, 1)
-        x = self.bilstm(x)
+        x, _ = self.bilstm(x)
         x = torch.flatten(x, 1)
         
         x = self.fc(x)
@@ -249,22 +249,5 @@ class ResNetLSTM(nn.Module):
         return self._forward_impl(x)
 
 
-def _resnet(arch, block, layers, pretrained, progress, **kwargs):
-    model = ResNet(block, layers, **kwargs)
-    if pretrained:
-        state_dict = load_state_dict_from_url(model_urls[arch],
-                                              progress=progress)
-        model.load_state_dict(state_dict)
-    return model
-
-
-def resnet18(pretrained=False, progress=True, **kwargs):
-    r"""ResNet-18 model from
-    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _resnet('resnet18', BasicBlock, [2, 2, 2, 2], pretrained, progress,
-                   **kwargs)
+def resnet18_lstm(in_channel, num_classes):
+    return ResNetLSTM(in_channel, BasicBlock, [2, 2, 2, 2], num_classes)
