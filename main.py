@@ -185,7 +185,11 @@ def main(isTest):
                 dataset = EEGDataset(os.path.join(
                     opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'train', opt.E, opt.outclass)
                 cvsets.append(dataset)
+                print('train/val set: +' + f)
+                logging.info('train/val set: +' + f)
             else:
+                print('test set: ' + f)
+                logging.info('test set: ' + f)
                 testset = EEGDataset(os.path.join(
                     opt.datasetPath, f), opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
         
