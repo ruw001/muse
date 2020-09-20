@@ -42,7 +42,7 @@ parser.add_argument('-E', default='P', help='N: none, E: extract, P: PSD')
 parser.add_argument('-lr', type=float, default=0.002, help='learnign rate')
 parser.add_argument('-numEpoch', type=int, default=200, help='# epochs')
 parser.add_argument('-batchsize', type=int, default=32, help='batch size')
-parser.add_argument('-valInterval', type=int, default=1,
+parser.add_argument('-valInterval', type=int, default=5,
                     help='interval for validation')
 parser.add_argument('-signalType', default='EEG',
                     help='specify the type of your signal data')
