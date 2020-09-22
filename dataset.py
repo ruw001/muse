@@ -41,8 +41,8 @@ class EEGDataset(tud.Dataset):
                         electrodes = [float(e) for e in entries[1:5]] # need to change if data format is different
                         signal.append(electrodes)
                 signal = np.array(signal)
-                # if self.extract == 'N':
-                signal = stats.zscore(signal, axis=0)
+                if self.extract == 'N':
+                    signal = stats.zscore(signal, axis=0)
                 
                 ws = int(self.winsize * self.freq)
                 st = int(self.stride * self.freq)
