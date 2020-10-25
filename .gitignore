@@ -1,7 +1,7 @@
 .idea/
 *.h5
 exps/
-# data/
+data/archive
 __pycache__/
 .vscode/
 .DS_Store
