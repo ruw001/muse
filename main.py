@@ -240,13 +240,13 @@ def main(isTest):
                 break
 
     else:
-        dataset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
+        dataset = EEGDataset(opt.datasetPath,
                              opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
         test_loader = tud.DataLoader(dataset, batch_size=opt.batchsize)
         logging.info('Testing start...')
         print('Testing start...')
         loss, acc = val(0, test_loader, model, criterion,
-                        optimizer, device, len(opt.outclass), opt.prob)
+                        optimizer, device, len(opt.outclass), opt.prob, printout=True)
         print('test acc: {}, loss: {}'.format(acc, loss))
         logging.info('test acc: {}, loss: {}'.format(acc, loss))
 

@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import logging
 
-def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, prob='clf'):
+def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, prob='clf', printout=False):
     nIter = len(dataLoader)
     if split == 'train':
         model.train()
@@ -15,6 +15,8 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, 
     acc = 0
     run_loss = 0
     tolarance = 0.5 / (numOut - 1)
+    gt_list = []
+    pred_list = []
     for (data, labels) in tqdm(dataLoader):
         # data = data.double()
         if prob == 'reg':
@@ -41,6 +43,9 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, 
                 _, pred = output.max(1)
                 num_true += pred.eq(labels).sum().item()
                 total += labels.size(0)
+                if printout:
+                    gt_list.append(labels)
+                    pred_list.append(pred)
             else: # reg
                 num_true += (abs(output - labels) < tolarance).sum().item()
                 # print(labels)
@@ -48,6 +53,15 @@ def step(split, epoch, dataLoader, model, criterion, optimizer, device, numOut, 
                 # print(num_true)
                 total += labels.size(0)
                 # print(total)
+
+    if printout:
+        with open('out.txt', 'w') as outfile:
+            gt_list = torch.cat(gt_list)
+            pred_list = torch.cat(pred_list)
+            for i in range(gt_list.size(0)):
+                _label = gt_list[i].item()
+                _pred = pred_list[i].item()
+                outfile.write(str(_label) + ',' + str(_pred) + '\n')
 
     run_loss /= nIter
     if split == 'val':
@@ -59,5 +73,5 @@ def train(epoch, dataLoader, model, criterion, optimizer, device, numOut, prob='
     return step('train', epoch, dataLoader, model, criterion, optimizer, device, numOut, prob)
 
 
-def val(epoch, dataLoader, model, criterion, optimizer, device, numOut, prob='clf'):
-    return step('val', epoch, dataLoader, model, criterion, optimizer, device, numOut, prob)
+def val(epoch, dataLoader, model, criterion, optimizer, device, numOut, prob='clf', printout=False):
+    return step('val', epoch, dataLoader, model, criterion, optimizer, device, numOut, prob, printout=printout)

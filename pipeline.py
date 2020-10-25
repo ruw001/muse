@@ -157,14 +157,34 @@ IP = opt.ip
 PORT = 25000
 
 th1 = EEGThread(0, opt.winsize, opt.stride)
-# th2 = InferenceThread(1, IP, PORT)
+th2 = InferenceThread(1, IP, PORT)
 # th3 = MitigationThread(2, '')
 th1.start()
-# th2.start()
+th2.start()
 
+# TKinter stuff
+mainwindow = tkinter.Tk()
 
+mainwindow.title("N-back task Adaptive scheduling")
+mainwindow.geometry("500x600")
 
+title = tkinter.Label(mainwindow, text="test session", font=("Arial", 30))
+title.pack()
 
+feedback = tkinter.Label(mainwindow, text="", font=("Arial", 30))
+feedback.pack()
 
+changeTitle(task_name_, tasks_)
 
+number = tkinter.Label(mainwindow, text="-", font=("Arial", 300))
+number.pack()
 
+button = tkinter.Button(
+    mainwindow, 
+    text="Start",
+    command= lambda: startTask(user_id_, task_name_, interval_, length_, tasks_))
+button.pack()
+
+mainwindow.bind("<space>", check)
+
+mainwindow.mainloop()
