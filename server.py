@@ -4,6 +4,8 @@ import argparse
 import time
 import torch
 from resnet import ResNet, BasicBlock, Bottleneck
+from resnet_lstm import resnet18_lstm, resnet101_lstm
+from scipy import signal as scisig
 
 
 def extract_band(data, sf):
@@ -18,6 +20,17 @@ def extract_band(data, sf):
                            (fft_freq <= band[1]))[0]
         res.append(fft_vals[:, freq_ix])
     return np.concatenate(res, axis=0)
+
+def stft_psd_extract(self, freq, data):
+        '''
+            data.shape: 30*256 x 4 
+        '''
+        psds = []
+        for j in range(4):
+            f, t, zxx = scisig.stft(data[:,j], fs=freq, nperseg=freq, nfft=freq, axis=0)
+            zxx = zxx[3:56, :]
+            psds.append(np.abs(zxx))
+        return np.array(psds)
 
 def send_from(arr, dest):
     view = memoryview(arr).cast('B')
@@ -58,8 +71,8 @@ parser.add_argument('-useGPU', action='store_true', help='if use GPU or not')
 parser.add_argument('-gpuids', nargs='+', type=int,
                     default=[0], help='GPU IDs')
 parser.add_argument('-numClass', type=int, default=2, help='#output classes')
-parser.add_argument('-E', action='store_true',
-                    help='extract freq bands and use FFT')
+parser.add_argument('-E', default='P',
+                    help='extract freq bands and use FFT (E) or use psd (P)')
 
 opt = parser.parse_args()
 HOST = ''
@@ -67,7 +80,10 @@ PORT = 25000
 freq = opt.freq
 window = np.zeros((opt.winsize * freq, 4))
 
-model = ResNet(8 if opt.E else 4, BasicBlock, [
+if opt.E == 'P':
+    model = resnet18_lstm(4, opt.numClass)
+else:
+    model = ResNet(8 if opt.E == 'E' else 4, BasicBlock, [
                2, 2, 2, 2], num_classes=opt.numClass, prob='clf')
 if opt.useGPU:
     device = 'cuda:{}'.format(opt.gpuids[0])
@@ -99,10 +115,17 @@ with socket(AF_INET, SOCK_STREAM) as server:
                 continue
             print('data received!' + str(count))
             # permute & extract features
-            data = np.transpose(window) # c x l
-            if opt.E:
-                data = extract_band(data, freq)  # c = c * len(bands), c x l
-            data = np.expand_dims(data, axis=0) # 1 x c x l
+            if opt.E == 'E':
+                data = np.transpose(window) # c x l
+                data = extract_band(data, freq)  # c' = c * len(bands), c' x l
+                data = np.expand_dims(data, axis=0) # 1 x c' x l'
+            elif opt.E == 'P':
+                data = stft_psd_extract(freq, data)
+                data = np.expand_dims(data, axis=0) # 1 x c x h x w
+                data = np.transpose(data, (0, 1, 3, 2)) # 1 x c x w x h
+            else:
+                data = np.transpose(window) # c x l
+                data = np.expand_dims(data, axis=0) # 1 x c x l
             data = torch.from_numpy(data)
             print('predicting...')
             if device == 'cpu':

@@ -49,37 +49,55 @@ class EEGThread(threading.Thread):
         finally:
             print("EEG thread. Exiting at {}".format(time.time()))
 
-# NOT IN USE!
 class InferenceThread(threading.Thread):
-    def __init__(self, tID, model):
+    def __init__(self, tID, IP, PORT):
         threading.Thread.__init__(self)
         self.threadID = tID
-        self.model = model
+        self.IP = IP
+        self.PORT = PORT #25000
     
     def run(self):
-        print("Inference thread. Starting at {}".format(time.time()))
-        try:
-            while True:
-                window = dataBuffer.get()
-                print('data consumed!')
-                data = np.expand_dims(np.transpose(np.array(window)), 0)
-                # here run model
-                workload = self.model(data)
-                if workload < 0.25:
-                    cmdBuffer.put('incr')
-                    print('cmd incr produced!')
-                elif workload > 0.75:
-                    cmdBuffer.put('decr')
-                    print('cmd decr produced!')
-                else:
-                    cmdBuffer.put('keep')
-                    print('cmd keep produced!')
-        except KeyboardInterrupt as e:
-            print("Ending program", e)
-        except Exception as e:
-            print(e)
-        finally:
-            print("Inference thread. Exiting at {}".format(time.time()))
+        while True:
+            try:
+                client = socket(AF_INET, SOCK_STREAM)
+                client.connect((self.IP, self.PORT))
+                print('Connected!')
+                break
+            except Exception as e:
+                print(e)
+                time.sleep(0.5)
+                continue
+
+        while True:
+            window = dataBuffer.get()  # block
+            print('data consumed!')
+            data = np.array(window, dtype=float) # l x c
+            try:
+                print('here send data!')
+                send_from(data, client)
+                print('here data sent!')
+                workload = int(str(client.recv(1024), 'utf-8'))
+                print('received! ', workload)
+                cmdBuffer.put(workload)
+                # if workload < 0.25:
+                #     cmdBuffer.put('incr')
+                #     print('cmd incr produced!')
+                # elif workload > 0.75:
+                #     cmdBuffer.put('decr')
+                #     print('cmd decr produced!')
+                # else:
+                #     cmdBuffer.put('keep')
+                #     print('cmd keep produced!')
+            # except KeyboardInterrupt as e:
+            #     client.close()
+            except Exception as e:
+                print(e)
+                try:
+                    client.close()
+                    client = socket(AF_INET, SOCK_STREAM)
+                    client.connect(('localhost', 25000))
+                except Exception as e:
+                    print('try again:', e)
 
 
 class MitigationThread(threading.Thread):
@@ -134,69 +152,15 @@ dataBuffer = Queue()
 cmdBuffer = Queue()
 
 TEST = opt.T
-
-th1 = EEGThread(0, opt.winsize, opt.stride)
-th2 = MitigationThread(1, '')
-th1.start()
-th2.start()
-
 IP = opt.ip
 PORT = 25000
 
-while True:
-    try:
-        client = socket(AF_INET, SOCK_STREAM)
-        client.connect((IP, PORT))
-        print('Connected!')
-        break
-    except Exception as e:
-        print(e)
-        time.sleep(0.5)
-        continue
+th1 = EEGThread(0, opt.winsize, opt.stride)
+th2 = InferenceThread(1, IP, PORT)
+# th2 = MitigationThread(2, '')
+th1.start()
+th2.start()
 
-while True:
-    window = dataBuffer.get()  # block
-    print('data consumed!')
-    data = np.array(window, dtype=float) # l x c
-
-    # send_from(data, client)
-    # workload = int(str(client.recv(1024), 'utf-8'))
-    # print('received! ', workload)
-    # if workload < 0.25:
-    #     cmdBuffer.put('incr')
-    #     print('cmd incr produced!')
-    # elif workload > 0.75:
-    #     cmdBuffer.put('decr')
-    #     print('cmd decr produced!')
-    # else:
-    #     cmdBuffer.put('keep')
-    #     print('cmd keep produced!')
-
-    try:
-        print('here send data!')
-        send_from(data, client)
-        print('here data sent!')
-        workload = int(str(client.recv(1024), 'utf-8'))
-        print('received! ', workload)
-        if workload < 0.25:
-            cmdBuffer.put('incr')
-            print('cmd incr produced!')
-        elif workload > 0.75:
-            cmdBuffer.put('decr')
-            print('cmd decr produced!')
-        else:
-            cmdBuffer.put('keep')
-            print('cmd keep produced!')
-    # except KeyboardInterrupt as e:
-    #     client.close()
-    except Exception as e:
-        print(e)
-        try:
-            client.close()
-            client = socket(AF_INET, SOCK_STREAM)
-            client.connect(('localhost', 25000))
-        except Exception as e:
-            print('try again:', e)
 
 
 
