@@ -77,12 +77,14 @@ class EEGDataset(tud.Dataset):
                 # print(new_data[0].shape)
                 data = np.array(new_data)
             # print(data.shape)
-            # shuffle dataset
-            indices = np.arange(data.shape[0])
-            np.random.shuffle(indices)
 
-            data = data[indices]
-            labels = labels[indices]
+            # shuffle dataset
+            if self.mode == 'train':
+                indices = np.arange(data.shape[0])
+                np.random.shuffle(indices)
+
+                data = data[indices]
+                labels = labels[indices]
 
             print('Creating h5 files...')
             hf = h5py.File(os.path.join(path, self.hf_name), 'w')
