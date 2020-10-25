@@ -120,7 +120,7 @@ with socket(AF_INET, SOCK_STREAM) as server:
                 data = extract_band(data, freq)  # c' = c * len(bands), c' x l
                 data = np.expand_dims(data, axis=0) # 1 x c' x l'
             elif opt.E == 'P':
-                data = stft_psd_extract(freq, data)
+                data = stft_psd_extract(freq, window)
                 data = np.expand_dims(data, axis=0) # 1 x c x h x w
                 data = np.transpose(data, (0, 1, 3, 2)) # 1 x c x w x h
             else:

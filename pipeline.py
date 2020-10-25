@@ -16,9 +16,8 @@ class EEGThread(threading.Thread):
         self.freq = 256
         self.stride = stride
 
-
     def run(self):
-        print("EEG thread. Starting at {}".format(time.time()))
+        print("EEG thread. Starting at {}, winsize: {}, stride: {}".format(time.time(), self.winsize, self.stride))
         strideCnt = 0
         try:
             if not TEST:
@@ -27,7 +26,7 @@ class EEGThread(threading.Thread):
             while True:
                 if TEST:
                     sample = [0.1, 0.2, 0.3, 0.4]
-                    time.sleep(1/256)
+                    time.sleep(0.001)
                 else:
                     sample, _ = inlet.pull_sample()
                 # list, float
@@ -35,6 +34,7 @@ class EEGThread(threading.Thread):
                     self.window.pop(0)
                     self.window.append(sample[:4])
                     strideCnt += 1
+                    # print('window full', strideCnt)
                     if strideCnt == self.stride * self.freq:
                         # put window to buffer
                         dataBuffer.put(self.window.copy())
@@ -42,6 +42,7 @@ class EEGThread(threading.Thread):
                         strideCnt = 0
                 else:
                     self.window.append(sample[:4])
+                    # print('add to window...', len(self.window))
         except KeyboardInterrupt as e:
             print("Ending program", e)
         except Exception as e:
@@ -88,14 +89,14 @@ class InferenceThread(threading.Thread):
                 # else:
                 #     cmdBuffer.put('keep')
                 #     print('cmd keep produced!')
-            # except KeyboardInterrupt as e:
-            #     client.close()
+            except KeyboardInterrupt as e:
+                client.close()
             except Exception as e:
                 print(e)
                 try:
                     client.close()
                     client = socket(AF_INET, SOCK_STREAM)
-                    client.connect(('localhost', 25000))
+                    client.connect((self.IP, self.PORT))
                 except Exception as e:
                     print('try again:', e)
 
@@ -142,7 +143,7 @@ def recv_into(arr, source):
 
 parser = argparse.ArgumentParser(description='Input for EEG AugCog system')
 parser.add_argument('-winsize', type=int, default=30, help='window size (s)')
-parser.add_argument('-stride', type=float, default=1, help='window size (s)')
+parser.add_argument('-stride', type=float, default=1, help='stride (s)')
 parser.add_argument('-ip', type=str, default='137.110.115.9', help='ip address of the server')
 parser.add_argument('-T', action='store_true', help='TEST mode')
 
@@ -156,10 +157,10 @@ IP = opt.ip
 PORT = 25000
 
 th1 = EEGThread(0, opt.winsize, opt.stride)
-th2 = InferenceThread(1, IP, PORT)
-# th2 = MitigationThread(2, '')
+# th2 = InferenceThread(1, IP, PORT)
+# th3 = MitigationThread(2, '')
 th1.start()
-th2.start()
+# th2.start()
 
 
 
