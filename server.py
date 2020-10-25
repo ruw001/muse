@@ -21,7 +21,7 @@ def extract_band(data, sf):
         res.append(fft_vals[:, freq_ix])
     return np.concatenate(res, axis=0)
 
-def stft_psd_extract(self, freq, data):
+def stft_psd_extract(freq, data):
         '''
             data.shape: 30*256 x 4 
         '''
