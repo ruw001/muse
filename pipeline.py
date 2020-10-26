@@ -144,14 +144,20 @@ def N_back_dynamic(user_id, interval, length, tasks, random_=False):
     dash_int = 0.5
 
     logging.info('Task {}, length={}, start!'.format('Random' if random_ else 'Adaptive', length))
-    react_time = []
-    correct_react = 0
+    react_time = {}
+    correct_react = {}
+
+    for t in tasks:
+        if t not in react_time:
+            react_time[t] = []
+            correct_react[t] = 0
 
     next_task = 0
     while True:
-        seq, res = randomTaskGenerator(tasks[next_task], length)
-        title.config(text='{}-back'.format(tasks[next_task]))
-        logging.info('Task {}-back start!'.format(tasks[next_task]))
+        curr_task = tasks[next_task]
+        seq, res = randomTaskGenerator(curr_task, length)
+        title.config(text='{}-back'.format(curr_task))
+        logging.info('Task {}-back start!'.format(curr_task))
         for i in range(length):
             WAIT_FOR_KEY = True
             start_timer = time.time()
@@ -161,18 +167,18 @@ def N_back_dynamic(user_id, interval, length, tasks, random_=False):
             if res[i] == 1:
                 if BEST_REACT_TIME == None:
                     feedback.config(text='False', fg='red')
-                    react_time.append(interval - dash_int)
+                    react_time[curr_task].append(interval - dash_int)
                     logging.info('{},{},{},{}'.format(seq[i], res[i], False, interval - dash_int))
                 else:
                     feedback.config(text='True', fg='light green')
-                    react_time.append(BEST_REACT_TIME - start_timer)
+                    react_time[curr_task].append(BEST_REACT_TIME - start_timer)
                     logging.info('{},{},{},{}'.format(seq[i], res[i], True, BEST_REACT_TIME - start_timer))
-                    correct_react += 1
+                    correct_react[curr_task] += 1
             else:
                 if BEST_REACT_TIME == None:
                     feedback.config(text='True', fg='light green')
                     logging.info('{},{},{},{}'.format(seq[i], res[i], True, 'N/A'))
-                    correct_react += 1
+                    correct_react[curr_task] += 1
                 else:
                     feedback.config(text='False', fg='red')
                     logging.info('{},{},{},{}'.format(seq[i], res[i], False, 'N/A'))
@@ -184,21 +190,41 @@ def N_back_dynamic(user_id, interval, length, tasks, random_=False):
             next_task += 1
             if next_task == len(tasks):
                 title.config(text='Finish!')
-                logging.info('Average react time: {}, correct react: {}'.format(sum(react_time)/len(react_time), correct_react))
+                results = loggingResult(correct_react, react_time)
+                for r in results:
+                    logging.info(r)
                 break
         else:
             wl = th3.STATE
             del tasks[next_task]
             if tasks == []:
                 title.config(text='Finish!')
-                logging.info('Average react time: {}, correct react: {}'.format(sum(react_time)/len(react_time), correct_react))
+                results = loggingResult(correct_react, react_time)
+                for r in results:
+                    logging.info(r)
                 break
             if wl == 0:
                 tasks.sort(reverse=True)
             else:
                 tasks.sort()
-        title.config(text='Get ready for next task: {}-back'.format(tasks[next_task]))
+        title.config(text='Next task: {}-back...'.format(tasks[next_task]))
         time.sleep(5)
+
+def loggingResult(corrects, times):
+    results = []
+    total_times = []
+    total_corrects = 0
+    for key in corrects:
+        curr_times = times[key]
+        curr_corrects = corrects[key]
+        total_times += curr_times
+        total_corrects += curr_corrects
+        s = str(key) + '-back task: average react time: {}, correct react: {}'.format(sum(curr_times)/len(curr_times), curr_corrects)
+        results.append(s)
+    s = 'Total average react time: {}, correct react: {}'.format(sum(total_times)/len(total_times), total_corrects)
+    results.append(s)
+    return results
+    
 
 
 def check(event=None):
