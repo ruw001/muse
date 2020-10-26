@@ -4,8 +4,15 @@ import threading
 from pylsl import StreamInlet, resolve_stream
 import argparse
 import time
+import tkinter
 from queue import Queue
 from socket import *
+import random
+import logging
+import os
+
+WAIT_FOR_KEY = False
+BEST_REACT_TIME = None
 
 class EEGThread(threading.Thread):
     def __init__(self, tID, winsize, stride):
@@ -80,15 +87,6 @@ class InferenceThread(threading.Thread):
                 workload = int(str(client.recv(1024), 'utf-8'))
                 print('received! ', workload)
                 cmdBuffer.put(workload)
-                # if workload < 0.25:
-                #     cmdBuffer.put('incr')
-                #     print('cmd incr produced!')
-                # elif workload > 0.75:
-                #     cmdBuffer.put('decr')
-                #     print('cmd decr produced!')
-                # else:
-                #     cmdBuffer.put('keep')
-                #     print('cmd keep produced!')
             except KeyboardInterrupt as e:
                 client.close()
             except Exception as e:
@@ -100,26 +98,24 @@ class InferenceThread(threading.Thread):
                 except Exception as e:
                     print('try again:', e)
 
-
 class MitigationThread(threading.Thread):
-    def __init__(self, tID, modality):
+    def __init__(self, tID, avgSize):
         threading.Thread.__init__(self)
         self.threadID = tID
-        self.modality = modality
-        self.state = 0
-
+        self.window = []
+        self.averageSzie = avgSize
+        self.STATE = 0
+    
     def run(self):
         print("Mitigation thread. Starting at {}".format(time.time()))
         try:
             while True:
                 cmd = cmdBuffer.get()
-                print('cmd ' + cmd + ' consumed!')
-                if cmd == 'incr':
-                    pass # TODO: mitigation method
-                elif cmd == 'decr':
-                    pass
-                else:
-                    pass
+                if len(self.window) >= self.averageSzie:
+                    self.window.pop(0)
+                self.window.append(cmd)
+                self.STATE = self.vote()
+                print('STATE:', self.STATE)
         except KeyboardInterrupt as e:
             print("Ending program", e)
         except Exception as e:
@@ -127,6 +123,134 @@ class MitigationThread(threading.Thread):
         finally:
             print("Mitigation thread. Exiting at {}".format(time.time()))
 
+    def vote(self):
+        dic = {}
+        for wl in self.window:
+            if wl not in dic:
+                dic[wl] = 0
+            dic[wl] += 1
+        vs = list(dic.values())
+        ks = list(dic.keys())
+        return ks[vs.index(max(vs))]
+
+def N_back_dynamic(user_id, interval, length, tasks, random_=False):
+    global WAIT_FOR_KEY, BEST_REACT_TIME
+    logging.basicConfig(filename=os.path.join(user_id, 'task_{}.log'.format('Random' if random_ else 'Adaptive')), 
+    level=logging.INFO)
+    if random_:
+        random.shuffle(tasks)
+    else:
+        tasks.sort()
+    dash_int = 0.5
+
+    logging.info('Task {}, length={}, start!'.format('Random' if random_ else 'Adaptive', length))
+    react_time = []
+    correct_react = 0
+
+    next_task = 0
+    while True:
+        seq, res = randomTaskGenerator(tasks[next_task], length)
+        title.config(text='{}-back'.format(tasks[next_task]))
+        logging.info('Task {}-back start!'.format(tasks[next_task]))
+        for i in range(length):
+            WAIT_FOR_KEY = True
+            start_timer = time.time()
+            number.config(text=seq[i])
+            time.sleep(interval - dash_int)
+            WAIT_FOR_KEY = False
+            if res[i] == 1:
+                if BEST_REACT_TIME == None:
+                    feedback.config(text='False', fg='red')
+                    react_time.append(interval - dash_int)
+                    logging.info('{},{},{},{}'.format(seq[i], res[i], False, interval - dash_int))
+                else:
+                    feedback.config(text='True', fg='light green')
+                    react_time.append(BEST_REACT_TIME - start_timer)
+                    logging.info('{},{},{},{}'.format(seq[i], res[i], True, BEST_REACT_TIME - start_timer))
+                    correct_react += 1
+            else:
+                if BEST_REACT_TIME == None:
+                    feedback.config(text='True', fg='light green')
+                    logging.info('{},{},{},{}'.format(seq[i], res[i], True, 'N/A'))
+                    correct_react += 1
+                else:
+                    feedback.config(text='False', fg='red')
+                    logging.info('{},{},{},{}'.format(seq[i], res[i], False, 'N/A'))
+            BEST_REACT_TIME = None
+            number.config(text='-')
+            time.sleep(dash_int)
+            feedback.config(text='', fg='black')
+        if random_:
+            next_task += 1
+            if next_task == len(tasks):
+                title.config(text='Finish!')
+                logging.info('Average react time: {}, correct react: {}'.format(sum(react_time)/len(react_time), correct_react))
+                break
+        else:
+            wl = th3.STATE
+            del tasks[next_task]
+            if tasks == []:
+                title.config(text='Finish!')
+                logging.info('Average react time: {}, correct react: {}'.format(sum(react_time)/len(react_time), correct_react))
+                break
+            if wl == 0:
+                tasks.sort(reverse=True)
+            else:
+                tasks.sort()
+        title.config(text='Get ready for next task: {}-back'.format(tasks[next_task]))
+        time.sleep(5)
+
+
+def check(event=None):
+    global WAIT_FOR_KEY, BEST_REACT_TIME
+    if WAIT_FOR_KEY and BEST_REACT_TIME == None:
+        BEST_REACT_TIME = time.time()
+
+def startTask(user_id, interval, length, tasks, random_=False):
+    '''
+    user_id::str        user id
+    interval::float     between each number (2.25s by default)
+    length::int         the length of the sequence
+    tasks::[int]        list of tasks
+    '''
+
+    if not os.path.exists(user_id):
+        os.mkdir(user_id)
+
+    # start recording
+    th_task = threading.Thread(target=N_back_dynamic, args=(user_id, interval, length, tasks, random_))
+
+    th_task.daemon = True
+    
+    th_task.start()
+    print('N-back thread is started!')
+
+def randomTaskGenerator(N, length):
+    '''
+    make sure at least 10 matches in the sequence
+    '''
+    print('Generating sequence...')
+    seq = [''] * length
+    res = [0] * length
+    letters = ['B', 'F', 'H', 'J', 'L', 'M', 'Q', 'R', 'X']
+    for i in range(10):
+        pairhead = random.randint(0, length-1-N)
+        while seq[pairhead] != '' or seq[pairhead + N] != '':
+            pairhead = random.randint(0, length-1-N)
+        num = random.randint(0,8)
+        seq[pairhead] = letters[num]
+        seq[pairhead + N] = letters[num]
+    for i in range(length):
+        if seq[i] == '':
+            num = random.randint(0,8)
+            seq[i] = letters[num]
+    for i in range(N, length):
+        if seq[i-N] == seq[i]:
+            res[i] = 1
+    
+    print('Sequence generated!')
+    return seq, res
+    
 
 def send_from(arr, dest):
     view = memoryview(arr).cast('B')
@@ -142,10 +266,12 @@ def recv_into(arr, source):
         view = view[nrecv:]
 
 parser = argparse.ArgumentParser(description='Input for EEG AugCog system')
-parser.add_argument('-winsize', type=int, default=30, help='window size (s)')
+parser.add_argument('-winsize', type=int, default=45, help='window size (s)')
 parser.add_argument('-stride', type=float, default=1, help='stride (s)')
 parser.add_argument('-ip', type=str, default='137.110.115.9', help='ip address of the server')
+parser.add_argument('-userid', type=str, default='user', help='user id')
 parser.add_argument('-T', action='store_true', help='TEST mode')
+parser.add_argument('-random', action='store_true', help='Random or not')
 
 opt = parser.parse_args()
 
@@ -157,10 +283,15 @@ IP = opt.ip
 PORT = 25000
 
 th1 = EEGThread(0, opt.winsize, opt.stride)
+th1.daemon = True
 th2 = InferenceThread(1, IP, PORT)
-# th3 = MitigationThread(2, '')
+th2.daemon = True
+th3 = MitigationThread(2, 5)
+th3.daemon = True
+
 th1.start()
 th2.start()
+th3.start()
 
 # TKinter stuff
 mainwindow = tkinter.Tk()
@@ -168,21 +299,26 @@ mainwindow = tkinter.Tk()
 mainwindow.title("N-back task Adaptive scheduling")
 mainwindow.geometry("500x600")
 
-title = tkinter.Label(mainwindow, text="test session", font=("Arial", 30))
+title = tkinter.Label(mainwindow, text="Get ready", font=("Arial", 30))
 title.pack()
 
 feedback = tkinter.Label(mainwindow, text="", font=("Arial", 30))
 feedback.pack()
 
-changeTitle(task_name_, tasks_)
+# changeTitle(task_name_, tasks_)
 
 number = tkinter.Label(mainwindow, text="-", font=("Arial", 300))
 number.pack()
 
+interval_ = 2.25
+length_ = 60
+tasks_ = [1,1,1,1,1,3,3,3,3,3]
+random_ = opt.random
+
 button = tkinter.Button(
     mainwindow, 
     text="Start",
-    command= lambda: startTask(user_id_, task_name_, interval_, length_, tasks_))
+    command= lambda: startTask(opt.userid, interval_, length_, tasks_, random_))
 button.pack()
 
 mainwindow.bind("<space>", check)
