@@ -123,11 +123,13 @@ def main(isTest):
         initEpoch = checkpoint['epoch']
 
     if not opt.isTest and not opt.cv:
-        dataset = EEGDataset(os.path.join(opt.datasetPath, 'train'),
+        trainset = EEGDataset(os.path.join(opt.datasetPath, 'train'),
                              opt.signalType, opt.freq, opt.winsize, opt.stride, 'train', opt.E, opt.outclass)
-        train_len = int(len(dataset)*0.85)
-        trainset, valset = tud.random_split(
-            dataset, [train_len, len(dataset) - train_len])
+        valset = EEGDataset(os.path.join(opt.datasetPath, 'val'),
+                             opt.signalType, opt.freq, opt.winsize, opt.stride, 'val', opt.E, opt.outclass)
+        # train_len = int(len(dataset)*0.85)
+        # trainset, valset = tud.random_split(
+        #     dataset, [train_len, len(dataset) - train_len])
         testset = EEGDataset(os.path.join(opt.datasetPath, 'test'),
                              opt.signalType, opt.freq, opt.winsize, opt.stride, 'test', opt.E, opt.outclass)
 
