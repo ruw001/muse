@@ -306,7 +306,7 @@ cmdBuffer = Queue()
 
 TEST = opt.T
 IP = opt.ip
-PORT = 25000
+PORT = 65432
 
 th1 = EEGThread(0, opt.winsize, opt.stride)
 th1.daemon = True

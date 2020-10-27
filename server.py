@@ -76,7 +76,7 @@ parser.add_argument('-E', default='P',
 
 opt = parser.parse_args()
 HOST = ''
-PORT = 25000
+PORT = 65432
 freq = opt.freq
 window = np.zeros((opt.winsize * freq, 4))
 
