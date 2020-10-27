@@ -25,6 +25,24 @@ def randomTaskGenerator(N, length):
     print('Sequence generated!')
     return seq, res
 
-seq, res = randomTaskGenerator(3, 30)
-print(seq)
-print(res)
+# seq, res = randomTaskGenerator(3, 30)
+# print(seq)
+# print(res)
+
+times = []
+mistakes = 0
+total = 0
+
+with open('ruru/task_Adaptive01.log', 'r') as infile:
+    lines = infile.readlines()
+    for l in lines:
+        items = l.strip().split(',')
+        if len(items) != 4:
+            continue
+        total += 1
+        if items[2] == 'False':
+            mistakes +=1
+        if items[3] != 'N/A':
+            times.append(float(items[3]))
+print('Avg time: {}'.format(sum(times)/len(times)))
+print('Acc: {}'.format(1 - mistakes/total))

@@ -338,7 +338,7 @@ number.pack()
 
 interval_ = 2.25
 length_ = 60
-tasks_ = [1,1,1,1,1,3,3,3,3,3]
+tasks_ = [1,1,1,3,3,3]
 random_ = opt.random
 
 button = tkinter.Button(
