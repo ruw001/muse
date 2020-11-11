@@ -79,7 +79,7 @@ class EEGDataset(tud.Dataset):
             # print(data.shape)
 
             # shuffle dataset
-            if self.mode == 'train':
+            if self.mode == 'train' and self.extract != 'P':
                 indices = np.arange(data.shape[0])
                 np.random.shuffle(indices)
 
