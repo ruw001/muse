@@ -6,13 +6,25 @@ from datetime import datetime
 import os
 import random
 import argparse
+import logging
 
 # global variables
 btnState = False # False when not clicked, True when clicked and in process
-curr_task = 0
+next_task = 0
 curr_letter = ''
 task_window = []
 window_full = False
+
+WAIT_FOR_KEY = False
+BEST_REACT_TIME = None
+
+def setup_logger(name, log_file, level=logging.INFO):
+    """To setup as many loggers as you want"""
+    handler = logging.FileHandler(log_file)
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+    return logger
 
 class channelThread(threading.Thread):
     def __init__(self, tID, type_name, task_name, duration, starttime, path):
@@ -30,6 +42,11 @@ class channelThread(threading.Thread):
             streams = resolve_stream('type', self.type_name)
             inlet = StreamInlet(streams[0])
             filename = '{}_{}_{}_{}.txt'.format(self.task_name, self.type_name, self.starttime, self.duration)
+            # logger = setup_logger('data', os.path.join(self.path, filename))
+            # while time.time() - self.starttime <= self.duration:
+            #     sample, timestamp = inlet.pull_sample()
+            #     # list, float
+            #     logger.info(str(timestamp) + ',' + ','.join([str(s) for s in sample]))
             with open(os.path.join(self.path, filename), 'w') as outfile:
                 while time.time() - self.starttime <= self.duration:
                     sample, timestamp = inlet.pull_sample()
@@ -38,53 +55,122 @@ class channelThread(threading.Thread):
         except KeyboardInterrupt as e:
             print("Ending program: EEG")
             raise e
+        except Exception as e:
+            print(e)
         finally:
             print("Exiting {} receiver for {}, starting {} and last {}s"\
                 .format(self.type_name, self.task_name, self.starttime, self.duration))
-        
-def N_back(interval, length, tasks, task_name):
-    global btnState, curr_task, curr_letter, task_window, window_full
-    try:
-        dash_int = 0.5
-        letters = ['B', 'F', 'H', 'J', 'L', 'M', 'Q', 'R', 'X']
-        for i in range(length):
-            num = random.randint(0,8)
-            letter = letters[num]
-            task_window.append(letter)
-            if len(task_window) == tasks[curr_task]+1:
-                window_full = True
-            elif len(task_window) > tasks[curr_task]+1:
-                task_window.pop(0)
-            number.config(text=str(letter))
-            time.sleep(interval-dash_int)
-            number.config(text='-')
-            time.sleep(dash_int)
-            feedback.config(text='', fg='black')
-        curr_task += 1
-        if curr_task >= len(tasks):
-            title.config(text='Finish!')
+
+def N_back_dynamic(file_path, interval, length, tasks):
+    global WAIT_FOR_KEY, BEST_REACT_TIME, next_task, btnState
+    logger = setup_logger('task', os.path.join(file_path, 'task_{}.log'.format(time.time())))
+    # logging.basicConfig(filename=os.path.join(file_path, 'task_{}.log'.format(time.time())), 
+    # level=logging.INFO)
+
+    dash_int = 0.5
+
+    logger.info('Task length={}, start!'.format(length))
+    react_time = {}
+    correct_react = {}
+
+    react_time[tasks[next_task]] = []
+    correct_react[tasks[next_task]] = 0
+
+    curr_task = tasks[next_task]
+    seq, res = randomTaskGenerator(curr_task, length)
+    title.config(text='{}-back'.format(curr_task))
+    logger.info('Task {}-back start!'.format(curr_task))
+    for i in range(length):
+        WAIT_FOR_KEY = True
+        start_timer = time.time()
+        number.config(text=seq[i])
+        time.sleep(interval - dash_int)
+        WAIT_FOR_KEY = False
+        if res[i] == 1:
+            if BEST_REACT_TIME == None:
+                # feedback.config(text='False', fg='red')
+                react_time[curr_task].append(interval - dash_int)
+                logger.info('{},{},{},{}'.format(seq[i], res[i], False, interval - dash_int))
+            else:
+                # feedback.config(text='True', fg='light green')
+                react_time[curr_task].append(BEST_REACT_TIME - start_timer)
+                logger.info('{},{},{},{}'.format(seq[i], res[i], True, BEST_REACT_TIME - start_timer))
+                correct_react[curr_task] += 1
         else:
-            changeTitle(task_name, tasks)
-            btnState = False
+            if BEST_REACT_TIME == None:
+                # feedback.config(text='True', fg='light green')
+                logger.info('{},{},{},{}'.format(seq[i], res[i], True, 'N/A'))
+                correct_react[curr_task] += 1
+            else:
+                # feedback.config(text='False', fg='red')
+                logger.info('{},{},{},{}'.format(seq[i], res[i], False, 'N/A'))
+        BEST_REACT_TIME = None
+        feedback.config(text='response recorded', fg='black')
         number.config(text='-')
+        time.sleep(dash_int)
         feedback.config(text='', fg='black')
-        task_window = []
-        window_full = False
-        print("N-back thread is finished!")
-    except KeyboardInterrupt as e:
-        print("Ending program: N-back")
-        raise e
-    finally:
-        print('Finish!')
+    results = loggingResult(correct_react, react_time)
+    for r in results:
+        logger.info(r)
+    next_task += 1
+    if (next_task >= len(tasks)):
+        title.config(text='Finish!')
+    else:
+        title.config(text='Next task: {}-back...'.format(tasks[next_task]))
+        btnState = False
+
+
+def loggingResult(corrects, times):
+    results = []
+    total_times = []
+    total_corrects = 0
+    for key in corrects:
+        curr_times = times[key]
+        curr_corrects = corrects[key]
+        total_times += curr_times
+        total_corrects += curr_corrects
+        avg_react_time = None if len(curr_times) == 0 else sum(curr_times)/len(curr_times)
+        s = str(key) + '-back task: average react time: {}, correct react: {}'.format(avg_react_time, curr_corrects)
+        results.append(s)
+    avg_react_time = None if len(total_times) == 0 else sum(total_times)/len(total_times)
+    s = 'Total average react time: {}, correct react: {}'.format(avg_react_time, total_corrects)
+
+    results.append(s)
+    return results
+
+def randomTaskGenerator(N, length):
+    '''
+    make sure at least 10 matches in the sequence
+    '''
+    print('Generating sequence...')
+    seq = [''] * length
+    res = [0] * length
+    letters = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    # letters = ['B', 'F', 'H', 'J', 'L', 'M', 'Q', 'R', 'X']
+
+    if length / N > 10:
+        for i in range(10):
+            pairhead = random.randint(0, length-1-N)
+            while seq[pairhead] != '' or seq[pairhead + N] != '':
+                pairhead = random.randint(0, length-1-N)
+            num = random.randint(0, len(letters)-1)
+            seq[pairhead] = letters[num]
+            seq[pairhead + N] = letters[num]
+    for i in range(length):
+        if seq[i] == '':
+            num = random.randint(0, len(letters)-1)
+            seq[i] = letters[num]
+    for i in range(N, length):
+        if seq[i-N] == seq[i]:
+            res[i] = 1
+    
+    print('Sequence generated!')
+    return seq, res
 
 def check(event=None):
-    global task_window, window_full
-    if len(task_window) == 0:
-        return
-    if task_window[0] == task_window[-1] and window_full:
-        feedback.config(text='True', fg='light green')
-    else:
-        feedback.config(text='False', fg='red')
+    global WAIT_FOR_KEY, BEST_REACT_TIME
+    if WAIT_FOR_KEY and BEST_REACT_TIME == None:
+        BEST_REACT_TIME = time.time()
 
 def startTask(user_id, task_name, interval, length, tasks):
     '''
@@ -94,24 +180,29 @@ def startTask(user_id, task_name, interval, length, tasks):
     length::int         the length of the sequence
     tasks::[int]        list of tasks
     '''
-    global btnState, curr_task
+    global btnState, next_task
     if btnState:
         print('already started a process, quit!')
         return
     btnState = True
 
-    if not os.path.exists(user_id):
-        os.mkdir(user_id)
+    file_path = os.path.join('local', user_id)
+
+    if not os.path.exists(file_path):
+        os.mkdir(file_path)
     
-    sub_task_name =  user_id + '_' + task_name + str(tasks[curr_task])
+    sub_task_name =  user_id + '_' + task_name + str(tasks[next_task])
 
     duration = interval * length
 
     # start recording
-    th1 = channelThread(1, 'EEG', sub_task_name + '_' + str(length), duration, time.time(), user_id)
-    th2 = channelThread(2, 'PPG', sub_task_name + '_' + str(length), duration, time.time(), user_id)
-    th_task = threading.Thread(target=N_back, args=(interval, length, tasks, task_name))
-    
+    th1 = channelThread(1, 'EEG', sub_task_name + '_' + str(length), duration, time.time(), file_path)
+    th1.daemon = True
+    th2 = channelThread(2, 'PPG', sub_task_name + '_' + str(length), duration, time.time(), file_path)
+    th2.daemon = True
+    th_task = threading.Thread(target=N_back_dynamic, args=(file_path, interval, length, tasks))
+    th_task.daemon = True
+
     th1.start()
     th2.start()
     th_task.start()
@@ -119,8 +210,8 @@ def startTask(user_id, task_name, interval, length, tasks):
 
 
 def changeTitle(task_name, tasks):
-    global curr_task
-    sub_task_name = task_name + str(tasks[curr_task])
+    global next_task
+    sub_task_name = task_name + str(tasks[next_task])
     title.config(text=sub_task_name)
 
 def simpleRecording(task_name, duration, user_id):
@@ -145,7 +236,7 @@ if  __name__ == "__main__":
     '''
     For built-in n-back task
     '''
-    parser.add_argument('-tasks', nargs='+', type=int, default=[1,2,3], help='Tasks')
+    parser.add_argument('-tasks', nargs='+', type=int, default=[1,2, 3], help='Tasks')
     parser.add_argument('-length', type=int, default=150, help='length of the sequence')
     parser.add_argument('-T', action='store_true', help='if the task is for training users')
 
@@ -174,7 +265,7 @@ if  __name__ == "__main__":
         feedback = tkinter.Label(mainwindow, text="", font=("Arial", 30))
         feedback.pack()
         
-        changeTitle(task_name_, tasks_)
+        title.config(text='First task: {}-back...'.format(tasks_[next_task]))
 
         number = tkinter.Label(mainwindow, text="-", font=("Arial", 300))
         number.pack()
