@@ -23,10 +23,10 @@
 4. Keep Muse device turned on, and open BlueMuse, you should be able to see your device on it. Click start streaming, you can see a little white window with data specs appears. Then you're ready to collect data. 
 
 5. Arguments you need to provide for `data/collector.py`:
-- `-userid`: typically includes your name, date, and session ID, e.g., bob1112_1
-- `-T`: if you want to practice, you can set this to True by simply type this argument
-- `-length`: the length of the sequence in each task. if you want to practice, you may want to specify this arg with a smaller number. Remember in data collection, the length would be 150 by default.
-- `-tasks`: the tasks included in one data collection session. E.g., [1,2,3] means you have 1-back, 2-back, 3-back in this session. I don't recommend change this to anything other than default if possible. 
+    - `-userid`: typically includes your name, date, and session ID, e.g., bob1112_1
+    - `-T`: if you want to practice, you can set this to True by simply type this argument
+    - `-length`: the length of the sequence in each task. if you want to practice, you may want to specify this arg with a smaller number. Remember in data collection, the length would be 150 by default.
+    - `-tasks`: the tasks included in one data collection session. E.g., [1,2,3] means you have 1-back, 2-back, 3-back in this session. I don't recommend change this to anything other than default if possible. 
 
 When you are ready to start, recommended example inputs are:
 
