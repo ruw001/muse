@@ -186,6 +186,7 @@ def N_back_dynamic(user_id, interval, length, tasks, random_=False):
             number.config(text='-')
             time.sleep(dash_int)
             feedback.config(text='', fg='black')
+            logging.info('current STATE: {}'.format(th3.STATE))
         if random_:
             next_task += 1
             if next_task == len(tasks):

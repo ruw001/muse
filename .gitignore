@@ -2,6 +2,7 @@
 *.h5
 exps/
 data/archive
+data/local
 __pycache__/
 .vscode/
 .DS_Store
