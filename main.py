@@ -90,7 +90,7 @@ def main(isTest):
             model = ResNet(4, BasicBlock, [2, 2, 2, 2], num_classes=len(
                 opt.outclass), prob=opt.prob)
         elif opt.E == 'P':
-            model = resnet18_lstm(4, len(opt.outclass))
+            model = resnet18_lstm(4, len(opt.outclass), prob=opt.prob)
     else:
         assert opt.E == 'N'
         model = EEG_CNN(opt.winsize*opt.freq, len(opt.outclass), prob=opt.prob)

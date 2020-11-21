@@ -145,7 +145,7 @@ class ResNetLSTM(nn.Module):
 
     def __init__(self, in_channel, block, layers, num_classes, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
-                 norm_layer=None):
+                 norm_layer=None, prob='clf'):
         super(ResNetLSTM, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -179,6 +179,9 @@ class ResNetLSTM(nn.Module):
             512 * block.expansion, 256 * block.expansion, 2, batch_first=True, bidirectional=True)
 
         self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc_reg = nn.Linear(512 * block.expansion, 1)
+
+        self.prob = prob
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -241,8 +244,11 @@ class ResNetLSTM(nn.Module):
         self.bilstm.flatten_parameters()
         x, _ = self.bilstm(x)
         x = torch.flatten(x, 1)
-        
-        x = self.fc(x)
+
+        if self.prob == 'clf':
+            x = self.fc(x)
+        else:  # == 'reg'
+            x = self.fc_reg(x)
 
         return x
 
@@ -250,8 +256,8 @@ class ResNetLSTM(nn.Module):
         return self._forward_impl(x)
 
 
-def resnet18_lstm(in_channel, num_classes):
-    return ResNetLSTM(in_channel, BasicBlock, [2, 2, 2, 2], num_classes)
+def resnet18_lstm(in_channel, num_classes, prob='clf'):
+    return ResNetLSTM(in_channel, BasicBlock, [2, 2, 2, 2], num_classes, prob=prob)
 
 def resnet101_lstm(in_channel, num_classes):
     return ResNetLSTM(in_channel, Bottleneck, [3, 4, 23, 3], num_classes)
